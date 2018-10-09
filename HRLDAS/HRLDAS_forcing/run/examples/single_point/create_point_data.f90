@@ -206,12 +206,18 @@ close(30)
 
   ! File metadata:
 
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "GRID_ID", grid_id)
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISWATER", water_classification)
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISURBAN", urban_classification)
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISICE"  , ice_classification)
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "MMINLU" , land_cover_source)
-  iret = nf90_put_att(ncid, NF90_GLOBAL, "TITLE"  , "Created from HRLDAS create_point_data")
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "GRID_ID"  , grid_id)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISWATER"  , water_classification)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISURBAN"  , urban_classification)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "ISICE"    , ice_classification)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "MMINLU"   , land_cover_source)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "DX"       , 0.0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "DY"       , 0.0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "TRUELAT1" , 0.0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "TRUELAT2" , 0.0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "STAND_LON", 0.0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "MAP_PROJ" , 0)
+  iret = nf90_put_att(ncid, NF90_GLOBAL, "TITLE"    , "Created from HRLDAS create_point_data")
 
   iret = nf90_enddef(ncid)
 
