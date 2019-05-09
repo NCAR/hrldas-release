@@ -4394,7 +4394,7 @@ ENDIF   ! CROPTYPE == 0
     MOZOLD = MOZ
   
     IF(ZLVL <= ZPD) THEN
-       write(*,*) 'critical problem: ZLVL <= ZPD; model stops'
+       write(*,*) 'WARNING: critical problem: ZLVL <= ZPD; model stops'
        call wrf_error_fatal("STOP in Noah-MP")
     ENDIF
 
@@ -9379,6 +9379,7 @@ CONTAINS
     character(len=*), intent(in) :: DATASET_IDENTIFIER
     integer :: ierr
     INTEGER :: IK,IM
+    logical :: file_named 
 
     integer :: NVEG
     character(len=256) :: VEG_DATASET_DESCRIPTION
@@ -9485,12 +9486,15 @@ CONTAINS
     HIGH_DENSITY_RESIDENTIAL_TABLE  = -99999
     HIGH_INTENSITY_INDUSTRIAL_TABLE = -99999
 
-    open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+
     if (ierr /= 0) then
-       write(*,'("****** Error ******************************************************")')
-       write(*,'("Cannot find file MPTABLE.TBL")')
-       write(*,'("STOP")')
-       write(*,'("*******************************************************************")')
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
        call wrf_error_fatal("STOP in Noah-MP read_mp_veg_parameters")
     endif
 
@@ -9501,8 +9505,8 @@ CONTAINS
        read(15,noahmp_modis_veg_categories)
        read(15,noahmp_modis_parameters)
     else
-       write(*,'("Unrecognized DATASET_IDENTIFIER in subroutine READ_MP_VEG_PARAMETERS")')
-       write(*,'("DATASET_IDENTIFIER = ''", A, "''")') trim(DATASET_IDENTIFIER)
+       write(*,'("WARNING: Unrecognized DATASET_IDENTIFIER in subroutine READ_MP_VEG_PARAMETERS")')
+       write(*,'("WARNING: DATASET_IDENTIFIER = ''", A, "''")') trim(DATASET_IDENTIFIER)
        call wrf_error_fatal("STOP in Noah-MP read_mp_veg_parameters")
     endif
     close(15)
@@ -9606,6 +9610,7 @@ CONTAINS
     CHARACTER*4         :: SLTYPE
     INTEGER             :: ITMP, NUM_SLOPE, LC
     CHARACTER(len=256)  :: message
+    logical             :: file_named 
     
 
     ! Initialize our variables to bad values, so that if the namelist read fails, we come to a screeching halt as soon as we try to use anything.
@@ -9630,74 +9635,87 @@ CONTAINS
 !
 !-----READ IN SOIL PROPERTIES FROM SOILPARM.TBL
 !
-    OPEN(19, FILE='SOILPARM.TBL',FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+    inquire( file='SOILPARM.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(21, file='SOILPARM.TBL',form='formatted',status='old',iostat=ierr)
+    else
+      open(21, form='formatted',status='old',iostat=ierr)
+    end if
+
     IF(ierr .NE. 0 ) THEN
       WRITE(message,FMT='(A)') 'module_sf_noahmpdrv.F: read_mp_soil_parameters: failure opening SOILPARM.TBL'
       CALL wrf_error_fatal ( message )
     END IF
 
-    READ (19,*)
-    READ (19,*) SLTYPE
-    READ (19,*) SLCATS
+    READ (21,*)
+    READ (21,*) SLTYPE
+    READ (21,*) SLCATS
     WRITE( message , * ) 'SOIL TEXTURE CLASSIFICATION = ', TRIM ( SLTYPE ) , ' FOUND', &
                SLCATS,' CATEGORIES'
     CALL wrf_message ( message )
 
     DO LC=1,SLCATS
-      READ (19,*) ITMP,BEXP_TABLE(LC),SMCDRY_TABLE(LC),F1_TABLE(LC),SMCMAX_TABLE(LC),    &
+      READ (21,*) ITMP,BEXP_TABLE(LC),SMCDRY_TABLE(LC),F1_TABLE(LC),SMCMAX_TABLE(LC),    &
                   SMCREF_TABLE(LC),PSISAT_TABLE(LC),DKSAT_TABLE(LC), DWSAT_TABLE(LC),   &
                   SMCWLT_TABLE(LC), QUARTZ_TABLE(LC)
     ENDDO
 
-    CLOSE (19)
+    CLOSE (21)
 
 !
 !-----READ IN GENERAL PARAMETERS FROM GENPARM.TBL
 !
-    OPEN(19, FILE='GENPARM.TBL',FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
+    inquire( file='GENPARM.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(22, file='GENPARM.TBL',form='formatted',status='old',iostat=ierr)
+    else
+      open(22, form='formatted',status='old',iostat=ierr)
+    end if
+
     IF(ierr .NE. 0 ) THEN
       WRITE(message,FMT='(A)') 'module_sf_noahlsm.F: read_mp_soil_parameters: failure opening GENPARM.TBL'
       CALL wrf_error_fatal ( message )
     END IF
 
-    READ (19,*)
-    READ (19,*)
-    READ (19,*) NUM_SLOPE
+    READ (22,*)
+    READ (22,*)
+    READ (22,*) NUM_SLOPE
 
     DO LC=1,NUM_SLOPE
-        READ (19,*) SLOPE_TABLE(LC)
+        READ (22,*) SLOPE_TABLE(LC)
     ENDDO
 
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
-    READ (19,*) CSOIL_TABLE
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
-    READ (19,*) REFDK_TABLE
-    READ (19,*)
-    READ (19,*) REFKDT_TABLE
-    READ (19,*)
-    READ (19,*) FRZK_TABLE
-    READ (19,*)
-    READ (19,*) ZBOT_TABLE
-    READ (19,*)
-    READ (19,*) CZIL_TABLE
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
-    READ (19,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*) CSOIL_TABLE
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*) REFDK_TABLE
+    READ (22,*)
+    READ (22,*) REFKDT_TABLE
+    READ (22,*)
+    READ (22,*) FRZK_TABLE
+    READ (22,*)
+    READ (22,*) ZBOT_TABLE
+    READ (22,*)
+    READ (22,*) CZIL_TABLE
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
+    READ (22,*)
 
-    CLOSE (19)
+    CLOSE (22)
 
   end subroutine read_mp_soil_parameters
 
   subroutine read_mp_rad_parameters()
     implicit none
     integer :: ierr
+    logical :: file_named 
 
     REAL :: ALBICE(MBAND),ALBLAK(MBAND),OMEGAS(MBAND),BETADS,BETAIS,EG(2)
     REAL :: ALBSAT_VIS(MSC)
@@ -9718,12 +9736,15 @@ CONTAINS
     BETAIS_TABLE     = -1.E36
     EG_TABLE         = -1.E36
 
-    open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+
     if (ierr /= 0) then
-       write(*,'("****** Error ******************************************************")')
-       write(*,'("Cannot find file MPTABLE.TBL")')
-       write(*,'("STOP")')
-       write(*,'("*******************************************************************")')
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
        call wrf_error_fatal("STOP in Noah-MP read_mp_rad_parameters")
     endif
 
@@ -9780,12 +9801,15 @@ BATS_NIR_DIR_TABLE   = -1.E36
 RSURF_SNOW_TABLE     = -1.E36
  RSURF_EXP_TABLE     = -1.E36
 
-    open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+
     if (ierr /= 0) then
-       write(*,'("****** Error ******************************************************")')
-       write(*,'("Cannot find file MPTABLE.TBL")')
-       write(*,'("STOP")')
-       write(*,'("*******************************************************************")')
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
        call wrf_error_fatal("STOP in Noah-MP read_mp_global_parameters")
     endif
 
@@ -9919,12 +9943,15 @@ RSURF_SNOW_TABLE     = RSURF_SNOW
       BIO2LAI_TABLE     = -1.E36
 
 
-    open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+
     if (ierr /= 0) then
-       write(*,'("****** Error ******************************************************")')
-       write(*,'("Cannot find file MPTABLE.TBL")')
-       write(*,'("STOP")')
-       write(*,'("*******************************************************************")')
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
        call wrf_error_fatal("STOP in Noah-MP read_mp_crop_parameters")
     endif
 
@@ -10039,6 +10066,7 @@ RSURF_SNOW_TABLE     = RSURF_SNOW
   subroutine read_mp_optional_parameters()
     implicit none
     integer :: ierr
+    logical :: file_named 
 
     NAMELIST / noahmp_optional_parameters /                                &
          sr2006_theta_1500t_a, sr2006_theta_1500t_b, sr2006_theta_1500t_c, &
@@ -10059,12 +10087,15 @@ RSURF_SNOW_TABLE     = RSURF_SNOW
          sr2006_psi_e_a      , sr2006_psi_e_b      , sr2006_psi_e_c      , &
          sr2006_smcmax_a     , sr2006_smcmax_b
 
-    open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+
     if (ierr /= 0) then
-       write(*,'("****** Error ******************************************************")')
-       write(*,'("Cannot find file MPTABLE.TBL")')
-       write(*,'("STOP")')
-       write(*,'("*******************************************************************")')
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
        call wrf_error_fatal("STOP in Noah-MP read_mp_optional_parameters")
     endif
 
