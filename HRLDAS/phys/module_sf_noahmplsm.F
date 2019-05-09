@@ -2478,6 +2478,8 @@ ENDIF   ! CROPTYPE == 0
   REAL, INTENT(OUT)                    :: FSRG    !ground reflected solar radiation (w/m2)
   REAL, INTENT(OUT)                    :: BGAP
   REAL, INTENT(OUT)                    :: WGAP
+  REAL, DIMENSION(1:2), INTENT(OUT)    :: ALBSND   !snow albedo (direct)
+  REAL, DIMENSION(1:2), INTENT(OUT)    :: ALBSNI   !snow albedo (diffuse)
 !jref:end  
 
 ! local
@@ -9767,6 +9769,7 @@ CONTAINS
   subroutine read_mp_global_parameters()
     implicit none
     integer :: ierr
+    logical :: file_named 
 
     REAL :: CO2,O2,TIMEAN,FSATMX,Z0SNO,SSI, &
             SWEMX,TAU0,GRAIN_GROWTH,EXTRA_GROWTH,DIRT_SOOT,&
@@ -9842,6 +9845,7 @@ RSURF_SNOW_TABLE     = RSURF_SNOW
   subroutine read_mp_crop_parameters()
     implicit none
     integer :: ierr
+    logical :: file_named 
 
  INTEGER                   :: DEFAULT_CROP
  INTEGER, DIMENSION(NCROP) :: PLTDAY
