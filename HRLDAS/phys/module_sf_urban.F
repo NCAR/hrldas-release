@@ -2423,7 +2423,16 @@ ENDIF
                              TRL_URB3D,TBL_URB3D,TGL_URB3D,                & ! inout
                              SH_URB2D,LH_URB2D,G_URB2D,RN_URB2D,           & ! inout
                              TS_URB2D,                                     & ! inout
-                             num_urban_layers,                             & ! in
+                             num_urban_ndm,                                & ! in
+                             urban_map_zrd,                                & ! in
+                             urban_map_zwd,                                & ! in
+                             urban_map_gd,                                 & ! in
+                             urban_map_zd,                                 & ! in
+                             urban_map_zdf,                                & ! in
+                             urban_map_bd,                                 & ! in
+                             urban_map_wd,                                 & ! in
+                             urban_map_gbd,                                & ! in
+                             urban_map_fbd,                                & ! in
                              num_urban_hi,                                 & ! in
                              TRB_URB4D,TW1_URB4D,TW2_URB4D,TGB_URB4D,      & ! inout
                              TLEV_URB3D,QLEV_URB3D,                        & ! inout
@@ -2449,7 +2458,16 @@ ENDIF
    INTEGER, INTENT(IN) :: ISURBAN, sf_urban_physics
    INTEGER, INTENT(IN) :: LOW_DENSITY_RESIDENTIAL, HIGH_DENSITY_RESIDENTIAL, HIGH_INTENSITY_INDUSTRIAL
    INTEGER, INTENT(IN) :: ims,ime,jms,jme,kms,kme,num_soil_layers
-   INTEGER, INTENT(IN) :: num_urban_layers                            !multi-layer urban
+   INTEGER, INTENT(IN) :: num_urban_ndm
+   INTEGER, INTENT(IN) :: urban_map_zrd
+   INTEGER, INTENT(IN) :: urban_map_zwd
+   INTEGER, INTENT(IN) :: urban_map_gd
+   INTEGER, INTENT(IN) :: urban_map_zd
+   INTEGER, INTENT(IN) :: urban_map_zdf
+   INTEGER, INTENT(IN) :: urban_map_bd
+   INTEGER, INTENT(IN) :: urban_map_wd
+   INTEGER, INTENT(IN) :: urban_map_gbd
+   INTEGER, INTENT(IN) :: urban_map_fbd
    INTEGER, INTENT(IN) :: num_urban_hi                                !multi-layer urban
 !   INTEGER, INTENT(IN) :: num_roof_layers, num_wall_layers, num_road_layers
 
@@ -2494,28 +2512,28 @@ ENDIF
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: TS_URB2D
 
 ! multi-layer UCM variables
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: TRB_URB4D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: TW1_URB4D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: TW2_URB4D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: TGB_URB4D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: TLEV_URB3D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: QLEV_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: TW1LEV_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: TW2LEV_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: TGLEV_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: TFLEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zrd, jms:jme), INTENT(INOUT) :: TRB_URB4D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zwd, jms:jme), INTENT(INOUT) :: TW1_URB4D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zwd, jms:jme), INTENT(INOUT) :: TW2_URB4D
+   REAL, DIMENSION(ims:ime, 1:urban_map_gd , jms:jme), INTENT(INOUT) :: TGB_URB4D
+   REAL, DIMENSION(ims:ime, 1:urban_map_bd , jms:jme), INTENT(INOUT) :: TLEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_bd , jms:jme), INTENT(INOUT) :: QLEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_wd , jms:jme), INTENT(INOUT) :: TW1LEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_wd , jms:jme), INTENT(INOUT) :: TW2LEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_gbd, jms:jme), INTENT(INOUT) :: TGLEV_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_fbd, jms:jme), INTENT(INOUT) :: TFLEV_URB3D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LF_AC_URB3D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: SF_AC_URB3D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: CM_AC_URB3D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: SFVENT_URB3D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LFVENT_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: SFWIN1_URB3D
-   REAL, DIMENSION( ims:ime, 1:num_urban_layers, jms:jme ), INTENT(INOUT) :: SFWIN2_URB3D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: SFW1_URB3D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: SFW2_URB3D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: SFR_URB3D
-   REAL, DIMENSION(ims:ime, 1:num_urban_layers, jms:jme), INTENT(INOUT) :: SFG_URB3D
-   REAL, DIMENSION( ims:ime,1:num_urban_hi, jms:jme), INTENT(INOUT) :: HI_URB2D
+   REAL, DIMENSION( ims:ime, 1:urban_map_wd, jms:jme), INTENT(INOUT) :: SFWIN1_URB3D
+   REAL, DIMENSION( ims:ime, 1:urban_map_wd, jms:jme), INTENT(INOUT) :: SFWIN2_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zd , jms:jme), INTENT(INOUT) :: SFW1_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zd , jms:jme), INTENT(INOUT) :: SFW2_URB3D
+   REAL, DIMENSION(ims:ime, 1:urban_map_zdf, jms:jme), INTENT(INOUT) :: SFR_URB3D
+   REAL, DIMENSION(ims:ime, 1:num_urban_ndm, jms:jme), INTENT(INOUT) :: SFG_URB3D
+   REAL, DIMENSION( ims:ime,1:num_urban_hi , jms:jme), INTENT(INOUT) :: HI_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LP_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: LB_URB2D
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: HGT_URB2D
