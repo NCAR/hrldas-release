@@ -2589,8 +2589,7 @@ ENDIF
                IF (HGT_URB2D(I,J)>0.) THEN
                   CONTINUE
                ELSE
-                  WRITE(mesg,*) 'USING DEFAULT URBAN MORPHOLOGY'
-                  call wrf_message(mesg)
+                  CALL wrf_debug(100, 'USING DEFAULT URBAN MORPHOLOGY')
                   LP_URB2D(I,J)=0.
                   LB_URB2D(I,J)=0.
                   HGT_URB2D(I,J)=0.
@@ -2624,8 +2623,7 @@ ENDIF
                IF (HGT_URB2D(I,J)>0.) THEN
                   CONTINUE
                ELSE
-                  WRITE(mesg,*) 'USING DEFAULT URBAN MORPHOLOGY'
-                  call wrf_message(mesg)
+                  CALL wrf_debug(100, 'USING DEFAULT URBAN MORPHOLOGY')
                   LP_URB2D(I,J)=0.
                   LB_URB2D(I,J)=0.
                   HGT_URB2D(I,J)=0.
@@ -2659,8 +2657,7 @@ ENDIF
               IF (HGT_URB2D(I,J)>0.) THEN
                   CONTINUE
                ELSE
-                  WRITE(mesg,*) 'USING DEFAULT URBAN MORPHOLOGY'
-                  call wrf_message(mesg)
+                  CALL wrf_debug(100, 'USING DEFAULT URBAN MORPHOLOGY')
                   LP_URB2D(I,J)=0.
                   LB_URB2D(I,J)=0.
                   HGT_URB2D(I,J)=0.
@@ -2694,8 +2691,7 @@ ENDIF
               IF (HGT_URB2D(I,J)>0.) THEN
                   CONTINUE
                ELSE
-                  WRITE(mesg,*) 'USING DEFAULT URBAN MORPHOLOGY'
-                  call wrf_message(mesg)
+                  CALL wrf_debug(100, 'USING DEFAULT URBAN MORPHOLOGY')
                   LP_URB2D(I,J)=0.
                   LB_URB2D(I,J)=0.
                   HGT_URB2D(I,J)=0.
@@ -2818,7 +2814,6 @@ ENDIF
 ! multi-layer urban
 !      IF( sf_urban_physics .EQ. 2)THEN
        IF((SF_URBAN_PHYSICS.eq.2).OR.(SF_URBAN_PHYSICS.eq.3)) THEN
-      DO k=1,num_urban_layers
 !        TRB_URB4D(I,k,J)=TSURFACE0_URB(I,J)
 !        TW1_URB4D(I,k,J)=TSURFACE0_URB(I,J)
 !        TW2_URB4D(I,k,J)=TSURFACE0_URB(I,J)
@@ -2827,20 +2822,19 @@ ENDIF
 !MT        TW1_URB4D(I,K,J)=tlayer0_urb(I,1,J)
 !MT        TW2_URB4D(I,K,J)=tlayer0_urb(I,1,J)
         IF (UTYPE_URB2D(I,J) > 0) THEN
-           TRB_URB4D(I,K,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
-           TW1_URB4D(I,K,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
-           TW2_URB4D(I,K,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
+           TRB_URB4D(I,:,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
+           TW1_URB4D(I,:,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
+           TW2_URB4D(I,:,J)=TBLEND_TBL(UTYPE_URB2D(I,J))
         ELSE
-           TRB_URB4D(I,K,J)=tlayer0_urb(I,1,J)
-           TW1_URB4D(I,K,J)=tlayer0_urb(I,1,J)
-           TW2_URB4D(I,K,J)=tlayer0_urb(I,1,J)
+           TRB_URB4D(I,:,J)=tlayer0_urb(I,1,J)
+           TW1_URB4D(I,:,J)=tlayer0_urb(I,1,J)
+           TW2_URB4D(I,:,J)=tlayer0_urb(I,1,J)
         ENDIF
-        TGB_URB4D(I,K,J)=tlayer0_urb(I,1,J)
-        SFW1_URB3D(I,K,J)=0.
-        SFW2_URB3D(I,K,J)=0.
-        SFR_URB3D(I,K,J)=0.
-        SFG_URB3D(I,K,J)=0.
-      ENDDO
+        TGB_URB4D(I,:,J)=tlayer0_urb(I,1,J)
+        SFW1_URB3D(I,:,J)=0.
+        SFW2_URB3D(I,:,J)=0.
+        SFR_URB3D(I,:,J)=0.
+        SFG_URB3D(I,:,J)=0.
        
        ENDIF 
               
@@ -2851,21 +2845,19 @@ ENDIF
          SFVENT_URB3D(I,J)=0.
          LFVENT_URB3D(I,J)=0.
 
-         DO K=1,num_urban_layers
-            TLEV_URB3D(I,K,J)=tlayer0_urb(I,1,J)
-            TW1LEV_URB3D(I,K,J)=tlayer0_urb(I,1,J)
-            TW2LEV_URB3D(I,K,J)=tlayer0_urb(I,1,J)
-            TGLEV_URB3D(I,K,J)=tlayer0_urb(I,1,J)
-            TFLEV_URB3D(I,K,J)=tlayer0_urb(I,1,J)
-            QLEV_URB3D(I,K,J)=0.01
-            SFWIN1_URB3D(I,K,J)=0.
-            SFWIN2_URB3D(I,K,J)=0.
+            TLEV_URB3D(I,:,J)=tlayer0_urb(I,1,J)
+            TW1LEV_URB3D(I,:,J)=tlayer0_urb(I,1,J)
+            TW2LEV_URB3D(I,:,J)=tlayer0_urb(I,1,J)
+            TGLEV_URB3D(I,:,J)=tlayer0_urb(I,1,J)
+            TFLEV_URB3D(I,:,J)=tlayer0_urb(I,1,J)
+            QLEV_URB3D(I,:,J)=0.01
+            SFWIN1_URB3D(I,:,J)=0.
+            SFWIN2_URB3D(I,:,J)=0.
 !rm         LF_AC_URB3D(I,J)=0.
 !rm         SF_AC_URB3D(I,J)=0.
 !rm         CM_AC_URB3D(I,J)=0.
 !rm         SFVENT_URB3D(I,J)=0.
 !rm         LFVENT_URB3D(I,J)=0.
-         ENDDO
 
       endif
 
@@ -2893,6 +2885,8 @@ ENDIF
 
       IF (CHECK.EQ.0)THEN
       IF(IVGTYP(I,J).EQ.1)THEN
+        write(mesg,*) 'Sample of Urban settings'
+        call wrf_message(mesg)
         write(mesg,*) 'TSURFACE0_URB',TSURFACE0_URB(I,J)
         call wrf_message(mesg)
         write(mesg,*) 'TDEEP0_URB', TDEEP0_URB(I,J)
