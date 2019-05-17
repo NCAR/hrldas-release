@@ -2,7 +2,9 @@
 
 HRLDAS (High Resolution Land Data Assimilation System) containing the Noah-MP Land Surface Model
 
-Zhe Zhang made modification on May 16, 2019, regarding stomata, crop (in LSM), and irrigation (in driver).
+Much appreciated this work is mostly coded by Xiaoyu, based on an older version of hrldas 
+Merged and tested and uploaded by Zhe Zhang, 2019-05-16
+Thanks Mike and Fei's suggestions on transferring parameters and irrigation schemes.
 
 Repository branch structure (as of July 27, 2018) (which is based on)
 
