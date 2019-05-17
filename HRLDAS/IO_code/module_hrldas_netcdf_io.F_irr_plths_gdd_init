@@ -3185,6 +3185,9 @@ contains
     else if (output_layers == "URBN") then
        ierr = nf90_inq_dimid(ncid, "urban_layers", dimid_kx)
        call error_handler(ierr, "ADD_TO_RESTART:  nf90_inq_dimid for 'urban_layers'")
+    else if (output_layers == "CROP") then
+       ierr = nf90_inq_dimid(ncid, "crop_types", dimid_kx)
+       call error_handler(ierr, "ADD_TO_RESTART:  nf90_inq_dimid for 'crop_layers'")
     else
        stop "PANIC!"
     endif
