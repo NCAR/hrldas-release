@@ -331,16 +331,6 @@
                         !equivalent to 10mm depth (density = 100 kg/m3)
   RSURF_SNOW = 50.0     !surface resistence for snow [s/m]
 
-  IRR_CRI = 0.65        ! irrigation trigger creterion, fraction plant available [0-1]
-  IRR_BEG = 6.0         ! irrigation will begin on first timestep after this hour (local time)
-  IRR_LEN = 4.0         ! irrigation length (hours)
-  IRR_LIM = 35.0        ! maximum daily amount to irrigate [mm]
-  IRR_LAI = 0.0         ! if opt_irr=3, lai where irrigation will trigger
-  IRR_FRA = 0.0         ! irrigation fraction above(>) this to activate for grid [0-1]
-  IRR_GDD = 0.0         ! if opt_irr=4, accumulated gdd where irrigation will trigger
-  IRR_HAR = 20.0        ! if opt_irr=2, days before harvest to stop irrigation
-  IRR_PCP = 1.0      ! precipitation rate [mm/hr] when irrigation stops
-
 /
 
 &noahmp_crop_parameters
@@ -358,18 +348,18 @@ DEFAULT_CROP = 0                                      ! The default crop type(1-
 !                1       2       3       4       5
 !----------------------------------------------------------
  
-PLTDAY     =    111,    131,    111,    111,    111,  ! Planting date
-HSDAY      =    300,    280,    300,    300,    300,  ! Harvest date
+PLTDAY     =    130,    111,    111,    111,    111,  ! Planting date
+HSDAY      =    280,    300,    300,    300,    300,  ! Harvest date
 PLANTPOP   =   78.0,   78.0,   78.0,   78.0,   78.0,  ! Plant density [per ha] - used?
 IRRI       =    0.0,    0.0,    0.0,    0.0,    0.0,  ! Irrigation strategy 0= non-irrigation 1=irrigation (no water-stress)
 
 GDDTBASE   =   10.0,   10.0,   10.0,   10.0,   10.0,  ! Base temperature for GDD accumulation [C]
 GDDTCUT    =   30.0,   30.0,   30.0,   30.0,   30.0,  ! Upper temperature for GDD accumulation [C]
-GDDS1      =   50.0,   60.0,   50.0,   50.0,   50.0,  ! GDD from seeding to emergence
-GDDS2      =  625.0,  675.0,  718.0,  718.0,  718.0,  ! GDD from seeding to initial vegetative 
-GDDS3      =  933.0, 1183.0,  933.0,  933.0,  933.0,  ! GDD from seeding to post vegetative 
-GDDS4      = 1103.0, 1253.0, 1103.0, 1103.0, 1103.0,  ! GDD from seeding to intial reproductive
-GDDS5      = 1555.0, 1605.0, 1555.0, 1555.0, 1555.0,  ! GDD from seeding to pysical maturity 
+GDDS1      =   60.0,   50.0,   50.0,   50.0,   50.0,  ! GDD from seeding to emergence
+GDDS2      =  675.0,  718.0,  718.0,  718.0,  718.0,  ! GDD from seeding to initial vegetative 
+GDDS3      = 1183.0,  933.0,  933.0,  933.0,  933.0,  ! GDD from seeding to post vegetative 
+GDDS4      = 1253.0, 1103.0, 1103.0, 1103.0, 1103.0,  ! GDD from seeding to intial reproductive
+GDDS5      = 1605.0, 1555.0, 1555.0, 1555.0, 1555.0,  ! GDD from seeding to pysical maturity 
 C3PSN      =    0.0,    1.0,    1.0,    1.0,    1.0,  !
 KC25       =   30.0,   30.0,   30.0,   30.0,   30.0,  !
 AKC        =    2.1,    2.1,    2.1,    2.1,    2.1,  !
@@ -419,8 +409,8 @@ LF_OVRC_S1 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of leaf turnove
 LF_OVRC_S2 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
 LF_OVRC_S3 =    0.0,    0.0,    0.0,    0.0,    0.0,
 LF_OVRC_S4 =    0.0,    0.0,    0.0,    0.0,    0.0,
-LF_OVRC_S5 =    0.2,    0.2,   0.48,   0.48,   0.48,
-LF_OVRC_S6 =    0.3,    0.3,   0.48,   0.48,   0.48,
+LF_OVRC_S5 =    0.2,   0.48,   0.48,   0.48,   0.48,
+LF_OVRC_S6 =    0.3,   0.48,   0.48,   0.48,   0.48,
 LF_OVRC_S7 =    0.0,    0.0,    0.0,    0.0,    0.0,
 LF_OVRC_S8 =    0.0,    0.0,    0.0,    0.0,    0.0,
 
@@ -428,8 +418,8 @@ ST_OVRC_S1 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of stem turnove
 ST_OVRC_S2 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
 ST_OVRC_S3 =    0.0,    0.0,    0.0,    0.0,    0.0,
 ST_OVRC_S4 =    0.0,    0.0,    0.0,    0.0,    0.0,
-ST_OVRC_S5 =    0.2,   0.12,   0.12,   0.12,   0.12,
-ST_OVRC_S6 =    0.3,   0.06,   0.06,   0.06,   0.06,
+ST_OVRC_S5 =   0.12,   0.12,   0.12,   0.12,   0.12,
+ST_OVRC_S6 =   0.06,   0.06,   0.06,   0.06,   0.06,
 ST_OVRC_S7 =    0.0,    0.0,    0.0,    0.0,    0.0,
 ST_OVRC_S8 =    0.0,    0.0,    0.0,    0.0,    0.0,
 
@@ -437,21 +427,21 @@ RT_OVRC_S1 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of root tunrove
 RT_OVRC_S2 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
 RT_OVRC_S3 =    0.0,    0.0,    0.0,    0.0,    0.0,
 RT_OVRC_S4 =    0.0,    0.0,    0.0,    0.0,    0.0,
-RT_OVRC_S5 =    0.12,   0.12,   0.12,   0.12,   0.12,
-RT_OVRC_S6 =    0.06,   0.06,   0.06,   0.06,   0.06,
+RT_OVRC_S5 =   0.12,   0.12,   0.12,   0.12,   0.12,
+RT_OVRC_S6 =   0.06,   0.06,   0.06,   0.06,   0.06,
 RT_OVRC_S7 =    0.0,    0.0,    0.0,    0.0,    0.0,
 RT_OVRC_S8 =    0.0,    0.0,    0.0,    0.0,    0.0,
 
              
-LFMR25     =    0.8,    1.0,    1.0,    1.0,    1.0,  !  leaf maintenance respiration at 25C [umol CO2/m**2  /s]
-STMR25     =   0.05,    0.05,    0.1,    0.1,    0.1,  !  stem maintenance respiration at 25C [umol CO2/kg bio/s]
-RTMR25     =   0.05,    0.05,    0.0,    0.0,    0.0,  !  root maintenance respiration at 25C [umol CO2/kg bio/s]
-GRAINMR25  =    0.0,    0.0,    0.1,    0.1,    0.1,  ! grain maintenance respiration at 25C [umol CO2/kg bio/s]
+LFMR25     =    1.0,    1.0,    1.0,    1.0,    1.0,  !  leaf maintenance respiration at 25C [umol CO2/m**2  /s]
+STMR25     =   0.05,    0.1,    0.1,    0.1,    0.1,  !  stem maintenance respiration at 25C [umol CO2/kg bio/s]
+RTMR25     =   0.05,    0.0,    0.0,    0.0,    0.0,  !  root maintenance respiration at 25C [umol CO2/kg bio/s]
+GRAINMR25  =    0.0,    0.1,    0.1,    0.1,    0.1,  ! grain maintenance respiration at 25C [umol CO2/kg bio/s]
 
 LFPT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of carbohydrate flux to leaf
 LFPT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
-LFPT_S3    =    0.36,   0.4,    0.4,    0.4,    0.4,
-LFPT_S4    =    0.1,    0.2,    0.2,    0.2,    0.2,
+LFPT_S3    =    0.4,    0.4,    0.4,    0.4,    0.4,
+LFPT_S4    =    0.2,    0.2,    0.2,    0.2,    0.2,
 LFPT_S5    =    0.0,    0.0,    0.0,    0.0,    0.0,
 LFPT_S6    =    0.0,    0.0,    0.0,    0.0,    0.0,
 LFPT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
@@ -459,19 +449,19 @@ LFPT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0,
 
 STPT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of carbohydrate flux to stem
 STPT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
-STPT_S3    =    0.24,   0.2,    0.2,    0.2,    0.2,
-STPT_S4    =    0.6,    0.5,    0.5,    0.5,    0.5,
-STPT_S5    =    0.0,    0.0,   0.15,   0.15,   0.15,
-STPT_S6    =    0.0,    0.0,   0.05,   0.05,   0.05,
+STPT_S3    =    0.2,    0.2,    0.2,    0.2,    0.2,
+STPT_S4    =    0.5,    0.5,    0.5,    0.5,    0.5,
+STPT_S5    =    0.0,   0.15,   0.15,   0.15,   0.15,
+STPT_S6    =    0.0,   0.05,   0.05,   0.05,   0.05,
 STPT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
 STPT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0, 
 
 RTPT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of carbohydrate flux to root
 RTPT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
-RTPT_S3    =    0.4,    0.4,    0.4,    0.4,    0.4,
+RTPT_S3    =   0.34,    0.4,    0.4,    0.4,    0.4,
 RTPT_S4    =    0.3,    0.3,    0.3,    0.3,    0.3,
-RTPT_S5    =    0.05,   0.05,   0.05,   0.05,   0.05,
-RTPT_S6    =    0.0,    0.0,   0.05,   0.05,   0.05,
+RTPT_S5    =   0.05,   0.05,   0.05,   0.05,   0.05,
+RTPT_S6    =    0.0,   0.05,   0.05,   0.05,   0.05,
 RTPT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
 RTPT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0,
    
@@ -479,39 +469,70 @@ GRAINPT_S1 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! fraction of carbohydrate
 GRAINPT_S2 =    0.0,    0.0,    0.0,    0.0,    0.0,  ! One row for each of 8 stages
 GRAINPT_S3 =    0.0,    0.0,    0.0,    0.0,    0.0,
 GRAINPT_S4 =    0.0,    0.0,    0.0,    0.0,    0.0,
-GRAINPT_S5 =    0.95,   0.95,    0.8,    0.8,    0.8,
-GRAINPT_S6 =    1.0,    1.0,    0.9,    0.9,    0.9,
+GRAINPT_S5 =   0.95,    0.8,    0.8,    0.8,    0.8,
+GRAINPT_S6 =    1.0,    0.9,    0.9,    0.9,    0.9,
 GRAINPT_S7 =    0.0,    0.0,    0.0,    0.0,    0.0,
 GRAINPT_S8 =    0.0,    0.0,    0.0,    0.0,    0.0,
 
-LFCT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! carbohydrate translocation
-LFCT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,
-LFCT_S3    =    0.0,    0.,    0.4,    0.4,    0.4,
-LFCT_S4    =    0.0,    0.,    0.3,    0.3,    0.3,
-LFCT_S5    =    0.0,    0.0,   0.05,   0.05,   0.05,
-LFCT_S6    =    0.0,    0.0,   0.05,   0.05,   0.05,
-LFCT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
-LFCT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0,
 
-STCT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! carbohydrate translocation
-STCT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,
-STCT_S3    =    0.0,    0.,    0.4,    0.4,    0.4,
-STCT_S4    =    0.0,    0.,    0.3,    0.3,    0.3,
-STCT_S5    =    0.0,    0.,   0.05,   0.05,   0.05,
-STCT_S6    =    0.0,    0.0,   0.05,   0.05,   0.05,
-STCT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
-STCT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0,
-
-RTCT_S1    =    0.0,    0.0,    0.0,    0.0,    0.0,  ! carbohydrate translocation
-RTCT_S2    =    0.0,    0.0,    0.0,    0.0,    0.0,
-RTCT_S3    =    0.0,    0.,    0.4,    0.4,    0.4,
-RTCT_S4    =    0.0,    0.,    0.3,    0.3,    0.3,
-RTCT_S5    =    0.0,    0.,   0.05,   0.05,   0.05,
-RTCT_S6    =    0.0,    0.0,   0.05,   0.05,   0.05,
-RTCT_S7    =    0.0,    0.0,    0.0,    0.0,    0.0,
-RTCT_S8    =    0.0,    0.0,    0.0,    0.0,    0.0,
-
-BIO2LAI    =  0.015,  0.030,  0.015,  0.015,  0.015,  ! leaf are per living leaf biomass [m^2/kg]
+BIO2LAI   =  0.035,  0.015,  0.015,  0.015,  0.015,  ! leaf are per living leaf biomass [m^2/kg]
 
 /
  
+&noahmp_optional_parameters
+
+ !------------------------------------------------------------------------------
+ ! Saxton and Rawls 2006 Pedo-transfer function coefficients
+ !------------------------------------------------------------------------------
+
+ sr2006_theta_1500t_a =   -0.024   ! sand coefficient
+ sr2006_theta_1500t_b =    0.487   ! clay coefficient
+ sr2006_theta_1500t_c =    0.006   ! orgm coefficient
+ sr2006_theta_1500t_d =    0.005   ! sand*orgm coefficient
+ sr2006_theta_1500t_e =   -0.013   ! clay*orgm coefficient
+ sr2006_theta_1500t_f =    0.068   ! sand*clay coefficient
+ sr2006_theta_1500t_g =    0.031   ! constant adjustment
+
+ sr2006_theta_1500_a  =    0.14    ! theta_1500t coefficient
+ sr2006_theta_1500_b  =   -0.02    ! constant adjustment
+
+ sr2006_theta_33t_a   =   -0.251   ! sand coefficient
+ sr2006_theta_33t_b   =    0.195   ! clay coefficient
+ sr2006_theta_33t_c   =    0.011   ! orgm coefficient
+ sr2006_theta_33t_d   =    0.006   ! sand*orgm coefficient
+ sr2006_theta_33t_e   =   -0.027   ! clay*orgm coefficient
+ sr2006_theta_33t_f   =    0.452   ! sand*clay coefficient
+ sr2006_theta_33t_g   =    0.299   ! constant adjustment
+
+ sr2006_theta_33_a    =    1.283   ! theta_33t*theta_33t coefficient
+ sr2006_theta_33_b    =   -0.374   ! theta_33t coefficient
+ sr2006_theta_33_c    =   -0.015   ! constant adjustment
+
+ sr2006_theta_s33t_a  =    0.278   ! sand coefficient
+ sr2006_theta_s33t_b  =    0.034   ! clay coefficient
+ sr2006_theta_s33t_c  =    0.022   ! orgm coefficient
+ sr2006_theta_s33t_d  =   -0.018   ! sand*orgm coefficient
+ sr2006_theta_s33t_e  =   -0.027   ! clay*orgm coefficient
+ sr2006_theta_s33t_f  =   -0.584   ! sand*clay coefficient
+ sr2006_theta_s33t_g  =    0.078   ! constant adjustment
+
+ sr2006_theta_s33_a   =    0.636   ! theta_s33t coefficient
+ sr2006_theta_s33_b   =   -0.107   ! constant adjustment
+
+ sr2006_psi_et_a      =  -21.67    ! sand coefficient
+ sr2006_psi_et_b      =  -27.93    ! clay coefficient
+ sr2006_psi_et_c      =  -81.97    ! theta_s33 coefficient
+ sr2006_psi_et_d      =   71.12    ! sand*theta_s33 coefficient
+ sr2006_psi_et_e      =    8.29    ! clay*theta_s33 coefficient
+ sr2006_psi_et_f      =   14.05    ! sand*clay coefficient
+ sr2006_psi_et_g      =   27.16    ! constant adjustment
+
+ sr2006_psi_e_a       =    0.02    ! psi_et*psi_et coefficient
+ sr2006_psi_e_b       =   -0.113   ! psi_et coefficient
+ sr2006_psi_e_c       =   -0.7     ! constant adjustment
+
+ sr2006_smcmax_a      =   -0.097   ! sand adjustment
+ sr2006_smcmax_b      =    0.043   ! constant adjustment
+ 
+/
+
