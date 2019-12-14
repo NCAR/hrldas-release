@@ -19,3 +19,50 @@ This modification is named HRLDAS-crop-irr, which includes 3 parts:
 3.5 in drv.F -> change crop leaf and stem initial value to 0.05
 3.6 in hrldas_netcdf_io.F & NoahMP_hrldas_driver.F -> define crop dimension; read agriculture variable; 
 3.7 in NoahMP_hrldas_driver.F -> add BTRAN to output; add PGS, ACUIRRAMT to restart
+
+
+## Update in Dec 14 2019 
+some notes for running these two versions of Noah-MP crop&irrigation:
+So far these two versions of codes are used for point-scale simulation with crop and irrigation. For 2-D regional scale simulation, some additional data are needed, such as 2-D maps of irrigation fraction, planting area and planting/harvesting date, etc. 
+
+
+### To run crop model with transfer crop parameter:
+This version of codes include module_sf_noahmplsm.F_transferparameter and module_sf_noahmpdrv.F_transferparameter in ./phys and MPTABLE.TBL_crop_Zhe in ./run.
+
+change the code names (backup of original codes are strongly recommended):
+in phys directory:
+cp module_sf_noahmplsm.F module_sf_noahmplsm.F_bk
+cp module_sf_noahmpdrv.F module_sf_noahmpdrv.F_bk
+cp module_sf_noahmplsm.F_transferparameter module_sf_noahmplsm.F
+cp module_sf_noahmpdrv.F_transferparameter module_sf_noahmpdrv.F
+
+in run directory
+cp MPTABLE.TBL MPTABLE.TBL_bk
+cp MPTABLE.TBL_crop_Zhe MPTABLE.TBL
+
+compile and run 
+in namelist, use dveg = 4 or 5 (off or on in dynamic vegetation in vegetation but no crop grid) and crop = 1 (use Noah-MP crop code in Xing's model).
+
+### To run crop model with irr_plths_gdd_init
+This version of codes include module_sf_noahmplsm.F_irr_plths_gdd_init and module_sf_noahmpdrv.F_irr_plths_gdd_init in ./phys and MPTABLE.TBL_crop_Zhe in ./run. 
+
+change the code names (backup of original codes are strongly recommended):
+in phys directory:
+cp module_sf_noahmplsm.F module_sf_noahmplsm.F_bk
+cp module_sf_noahmpdrv.F module_sf_noahmpdrv.F_bk
+cp module_sf_noahmplsm.F_irr_plths_gdd_init module_sf_noahmplsm.F
+cp module_sf_noahmpdrv.F_irr_plths_gdd_init module_sf_noahmpdrv.F
+
+in IO_code directory:
+cp module_NoahMP_hrldas_driver.F module_NoahMP_hrldas_driver.F_bk
+cp module_hrldas_netcdf_io.F module_hrldas_netcdf_io.F_bk
+cp module_hrldas_netcdf_io.F_irr_plths_gdd_init module_hrldas_netcdf_io.F
+cp module_NoahMP_hrldas_driver.F_irr_plths_gdd_init module_NoahMP_hrldas_driver.F_irr_plths_gdd_init
+
+in run directory
+cp MPTABLE.TBL MPTABLE.TBL_bk
+cp MPTABLE.TBL_crop_Zhe MPTABLE.TBL
+
+compile and run 
+in namelist, use dveg = 4 or 5 (off or on in dynamic vegetation in vegetation but no crop grid) and crop = 1 (use Noah-MP crop code in Xing's model).
+in namelist, add IRRIGATION_OPTION before soil configuration option
