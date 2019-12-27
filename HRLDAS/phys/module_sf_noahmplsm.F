@@ -171,7 +171,10 @@ MODULE MODULE_SF_NOAHMPLSM
                       ! **0 -> No crop model, will run default dynamic vegetation
                       !   1 -> Liu, et al. 2016
 		      !   2 -> Gecros (Genotype-by-Environment interaction on CROp growth Simulator) Yin and van Laar, 2005
-
+	
+  INTEGER :: OPT_TDRN ! options for crop model
+                      ! **0 -> No tile drainage
+                      !   1 -> on
 !------------------------------------------------------------------------------------------!
 ! Physical Constants:                                                                      !
 !------------------------------------------------------------------------------------------!
@@ -375,7 +378,21 @@ MODULE MODULE_SF_NOAHMPLSM
 
      REAL :: KDT         !used in compute maximum infiltration rate (in INFIL)
      REAL :: FRZX        !used in compute maximum infiltration rate (in INFIL)
-
+!------------------------------------------------------------------------------------------!
+! From the tiledrain section of the MPTABLE.TBL file
+!------------------------------------------------------------------------------------------!
+     REAL    :: TDSMC_FAC
+     REAL    :: TD_DC
+     INTEGER :: TD_DEPTH
+     INTEGER :: DRAIN_LAYER_OPT
+     
+     REAL :: TD_DCOEF           ! m d^-1, drainage coefficent
+     REAL :: TD_D               ! m, depth to impervious layer from drain water level (D)
+     REAL :: TD_ADEPTH          ! m, actual depth of impervious layer from land surface
+     REAL :: TD_RADI            ! m, effective radius of drains (ro)
+     REAL :: TD_SPAC            ! m, distance between two drain tubes or tiles (L)
+     REAL :: TD_DDRAIN          ! m, Depth of drain
+     REAL :: KLAT_FAC           ! multiplication factor to determine conk(j1,j) from sol_k(j1,j) for HRU
   END TYPE noahmp_parameters
 
 contains
@@ -399,7 +416,7 @@ contains
                    STMASS  , WOOD    , STBLCP  , FASTCP  , LAI     , SAI     , & ! IN/OUT : 
                    CM      , CH      , TAUSS   ,                               & ! IN/OUT : 
                    GRAIN   , GDD     , PGS     ,                               & ! IN/OUT 
-                   SMCWTD  ,DEEPRECH , RECH    ,                               & ! IN/OUT :
+                   SMCWTD  ,DEEPRECH , RECH    , QTLDRN  , WATBLED, TDFRACMP,  & ! IN/OUT :
                    GECROS1D,                                                   & ! IN/OUT :
 		   Z0WRF   , &
                    FSA     , FSR     , FIRA    , FSH     , SSOIL   , FCEV    , & ! OUT : 
@@ -646,6 +663,9 @@ contains
   REAL                        , INTENT(INOUT)    :: GDD    !growing degree days
   INTEGER                     , INTENT(INOUT)    :: PGS    !plant growing stage [-]
 
+  REAL                        , INTENT(INOUT)    :: QTLDRN   !tile drainage (mm)
+  REAL                        , INTENT(IN)       :: WATBLED  !water table depth
+  REAL                        , INTENT(IN)       :: TDFRACMP !tile drain fraction map
 ! outputs
   REAL                          , INTENT(OUT)    :: NEE    !net ecosys exchange (g/m2/s CO2)
   REAL                          , INTENT(OUT)    :: GPP    !net instantaneous assimilation [g/m2/s C]
@@ -805,8 +825,8 @@ contains
                  SICE   ,ZWT    ,WA     ,WT     ,DZSNSO ,WSLAKE , & !inout
                  SMCWTD ,DEEPRECH,RECH                          , & !inout
                  CMC    ,ECAN   ,ETRAN  ,FWET   ,RUNSRF ,RUNSUB , & !out
-                 QIN    ,QDIS   ,PONDING1       ,PONDING2,&
-                 QSNBOT                             &
+                 QIN    ,QDIS   ,PONDING1       ,PONDING2,        &
+                 QSNBOT ,QTLDRN ,WATBLED,DX     ,TDFRACMP         &
 #ifdef WRF_HYDRO
                         ,sfcheadrt                     &
 #endif
@@ -5718,7 +5738,7 @@ ENDIF   ! CROPTYPE == 0
                     SMCWTD ,DEEPRECH,RECH                          , & !inout
                     CMC    ,ECAN   ,ETRAN  ,FWET   ,RUNSRF ,RUNSUB , & !out
                     QIN    ,QDIS   ,PONDING1       ,PONDING2,        &
-                    QSNBOT                                           &
+                    QSNBOT ,QTLDRN ,WATBLED ,DX    ,TDFRACMP         &
 #ifdef WRF_HYDRO
                         ,sfcheadrt                     &
 #endif
@@ -5789,7 +5809,11 @@ ENDIF   ! CROPTYPE == 0
   REAL,                            INTENT(INOUT) :: SMCWTD !soil water content between bottom of the soil and water table [m3/m3]
   REAL,                            INTENT(INOUT) :: DEEPRECH !recharge to or from the water table when deep [m]
   REAL,                            INTENT(INOUT) :: RECH !recharge to or from the water table when shallow [m] (diagnostic)
-
+  REAL,                            INTENT(INOUT) :: QTLDRN   !tile drainage (mm)
+  REAL,                            INTENT(IN)    :: WATBLED  !watertable depth from hydro module  
+  REAL,                            INTENT(IN)    :: DX
+  REAL,                            INTENT(IN)    :: TDFRACMP !tile drain fraction map
+  
 ! output
   REAL,                            INTENT(OUT)   :: CMC     !intercepted water per ground area (mm)
   REAL,                            INTENT(OUT)   :: ECAN    !evap of intercepted water (mm/s) [+]
@@ -5909,8 +5933,8 @@ ENDIF   ! CROPTYPE == 0
                             QINSUR ,QSEVA  ,ETRANI ,SICE   ,ILOC   , JLOC , & !in
                             SH2O   ,SMC    ,ZWT    ,VEGTYP , & !inout
                            SMCWTD, DEEPRECH                       , & !inout
-                            RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX )   !out
- 
+                            RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX, &   !out
+                            QTLDRN ,WATBLED,DX     ,TDFRACMP)
        IF(OPT_RUN == 1) THEN 
           CALL GROUNDWATER (parameters,NSNOW  ,NSOIL  ,DT     ,SICE   ,ZSOIL  , & !in
                             STC    ,WCND   ,FCRMAX ,ILOC   ,JLOC   , & !in
@@ -6893,7 +6917,8 @@ ENDIF   ! CROPTYPE == 0
                         QINSUR ,QSEVA  ,ETRANI ,SICE   ,ILOC   , JLOC, & !in
                         SH2O   ,SMC    ,ZWT    ,VEGTYP ,& !inout
                         SMCWTD, DEEPRECH                       ,& !inout
-                        RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX )   !out
+                        RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX, QTLDRN, & !out
+                        WATBLED,DX     ,TDFRACMP)   !out
 
 ! ----------------------------------------------------------------------
 ! calculate surface runoff and soil moisture.
@@ -6923,7 +6948,11 @@ ENDIF   ! CROPTYPE == 0
   REAL, INTENT(INOUT)                     :: ZWT    !water table depth [m]
   REAL,                     INTENT(INOUT) :: SMCWTD !soil moisture between bottom of the soil and the water table [m3/m3]
   REAL                    , INTENT(INOUT) :: DEEPRECH
-
+  REAL                    , INTENT(INOUT) :: QTLDRN ! tile drainage
+  REAL                    , INTENT(IN)    :: WATBLED
+  REAL                    , INTENT(IN)    :: DX
+  REAL                    , INTENT(IN)    :: TDFRACMP
+  
 ! output
   REAL, INTENT(OUT)                       :: QDRAIN !soil-bottom free drainage [mm/s] 
   REAL, INTENT(OUT)                       :: RUNSRF !surface runoff [mm/s] 
@@ -6956,6 +6985,7 @@ ENDIF   ! CROPTYPE == 0
   REAL                                    :: WATMIN !
   REAL                                    :: QDRAIN_SAVE !
   REAL                                    :: RUNSRF_SAVE !
+  REAL                                    :: QTLDRN_SAVE
   REAL                                    :: EPORE  !effective porosity [m3/m3]
   REAL, DIMENSION(1:NSOIL)                :: FCR    !impermeable fraction due to frozen soil
   INTEGER                                 :: NITER  !iteration times soil moisture (-)
@@ -7082,6 +7112,10 @@ ENDIF   ! CROPTYPE == 0
                       PDDUM  ,RUNSRF )                           !out
        END IF
 
+       !IF (OPT_TDRN ==1 .AND. OPT_RUN == 3) THEN ! Call Tile Drainage - Prasanth Valayamkunnath-6/16/2019
+       !   CALL TILE_DRAIN (parameters,NSOIL,SH2O,SMC,SICE,ZSOIL,QTLDRN)
+       !END IF
+       
        CALL SRT   (parameters,NSOIL  ,ZSOIL  ,DTFINE ,PDDUM  ,ETRANI , & !in
                    QSEVA  ,SH2O   ,SMC    ,ZWT    ,FCR    , & !in
                    SICEMAX,FCRMAX ,ILOC   ,JLOC   ,SMCWTD ,         & !in
@@ -7096,14 +7130,29 @@ ENDIF   ! CROPTYPE == 0
        RSAT =  RSAT + WPLUS
        QDRAIN_SAVE = QDRAIN_SAVE + QDRAIN
        RUNSRF_SAVE = RUNSRF_SAVE + RUNSRF
+       !QTLDRN_SAVE = QTLDRN_SAVE + QTLDRN
     END DO
 
     QDRAIN = QDRAIN_SAVE/NITER
     RUNSRF = RUNSRF_SAVE/NITER
-
+    !QTLDRN = QTLDRN_SAVE/NITER !(mm)
+    
     RUNSRF = RUNSRF * 1000. + RSAT * 1000./DT  ! m/s -> mm/s
     QDRAIN = QDRAIN * 1000.
 
+#ifndef WRF_HYDRO
+    CALL TD_FINDZWAT(parameters,NSOIL,SMC,SH2O,SICE,ZSOIL,SLDPTH,WATBLED)
+#endif
+    
+    print*, "OPT_TDRN=",OPT_TDRN
+    IF (OPT_TDRN == 1 .AND. TDFRACMP .GT. 0.3 .AND. OPT_RUN == 3) THEN ! Call Tile Drainage - Prasanth Valayamkunnath-6/19/2019
+        print*, "simple tile drain scheme is on"
+        CALL TILE_DRAIN (parameters,NSOIL,SH2O,SMC,SICE,ZSOIL,QTLDRN,DT)
+    ELSE IF (OPT_TDRN == 2 .AND. TDFRACMP .GT. 0.3 .AND. OPT_RUN == 3) THEN
+        print*, "Hooghoudt tile drain scheme is on"
+        CALL TILE_HOOGHOUDT (parameters,WCND,NSOIL,SH2O,SMC,SICE,ZSOIL,DT,DX,QTLDRN,WATBLED)
+    END IF
+    
 !WRF_HYDRO_DJG...
 !yw    INFXSRT = RUNSRF * DT   !mm/s -> mm
 
@@ -7572,6 +7621,420 @@ ENDIF   ! CROPTYPE == 0
     SMC = SH2O + SICE
 
   END SUBROUTINE SSTEP
+
+!== begin tile_drain ===============================================================================
+
+  SUBROUTINE TILE_DRAIN (parameters,NSOIL,SH2O,SMC,SICE,ZSOIL,QTLDRN,DT)
+! ----------------------------------------------------------------------
+! calculate tile drainage discharge (mm) per NITER of SOILWATER soubroutine
+! Prasanth Valayamkunnath - 06/13/2019
+! ----------------------------------------------------------------------
+    IMPLICIT NONE
+! ----------------------------------------------------------------------
+! inout
+    type (noahmp_parameters), intent(in) :: parameters
+    INTEGER,INTENT(IN)                          :: NSOIL
+    REAL,   INTENT(IN)                          :: DT
+    REAL, DIMENSION(1:NSOIL), INTENT(INOUT)     :: SH2O
+    REAL, DIMENSION(1:NSOIL), INTENT(INOUT)     :: SMC
+    REAL,INTENT(INOUT)                          :: QTLDRN
+! input
+    REAL, DIMENSION(1:NSOIL), INTENT(IN)        :: SICE
+    REAL, DIMENSION(1:NSOIL), INTENT(IN)        :: ZSOIL
+! local 
+    INTEGER                                     :: K
+    REAL                                        :: TDRVOL  ! temp variable for drainage volume (mm)
+    REAL,DIMENSION(1:NSOIL)                     :: OVRFC   ! temp variable for volume of water above field capacity
+    REAL,DIMENSION(1:NSOIL)                     :: AVFC    ! Available field capacity = FC - SICE (m3/m3)
+    REAL,DIMENSION(1:NSOIL)                     :: ZLAYER  ! thickness of soil layer
+    REAL,DIMENSION(1:NSOIL)                     :: TDFRAC 
+    REAL                                        :: TDDC
+    REAL                                        :: TDSUM
+! ----------------------------------------------------------------------
+    TDRVOL = 0.
+    OVRFC  = 0.
+    QTLDRN = 0.
+    ZLAYER = 0.
+    AVFC   = 0.
+    TDSUM  = 0.
+    TDFRAC = 0.
+    TDDC   = parameters%TD_DC * DT/(24*3600)
+    
+    DO K = 1, NSOIL
+      IF (K == 1) THEN
+         ZLAYER(K) = -1 * ZSOIL(K)
+      ELSE
+         ZLAYER(K) = (ZSOIL(K-1)-ZSOIL(K))
+      END IF
+    END DO
+      IF (parameters%DRAIN_LAYER_OPT == 0) THEN ! drainage from one specified layer in MPTABLE.TBL
+         print*, "CASE = 1"
+         K = parameters%TD_DEPTH
+         AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+         OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+         IF (OVRFC(K) > 0.) THEN
+            IF (OVRFC(K) > TDDC) OVRFC(K) = TDDC
+            TDRVOL   = TDRVOL  + OVRFC(K)
+            SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+            SMC(K)   = SH2O(K) + SICE (K)
+         END IF
+      ELSE IF (parameters%DRAIN_LAYER_OPT == 1) THEN
+         print*, "CASE = 2. Draining from layer 1 and 2"
+         DO K = 1, 2
+            AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+            OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+            IF(OVRFC(K) < 0.) OVRFC(K) = 0.
+            TDSUM    = TDSUM + OVRFC(K)
+         END DO
+         DO K = 1, 2
+            IF(OVRFC(K) .NE. 0.) THEN
+              TDFRAC(K)   = OVRFC(K)/TDSUM
+            END IF
+         END DO
+         IF (TDSUM > 0.) THEN
+            IF (TDSUM > TDDC) TDSUM = TDDC
+            TDRVOL   = TDRVOL  + TDSUM
+            DO K = 1, 2
+              OVRFC(K) = TDFRAC(K)*TDSUM
+              SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+              SMC(K)   = SH2O(K) + SICE (K)
+            END DO
+         END IF
+      ELSE IF (parameters%DRAIN_LAYER_OPT == 2) THEN
+         print*, "CASE = 3.  Draining from layer 1 2 and 3"
+         DO K = 1, 3
+            AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+            OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+            IF(OVRFC(K) < 0.) OVRFC(K) = 0.
+            TDSUM    = TDSUM + OVRFC(K)
+         END DO
+         DO K = 1, 3
+            IF(OVRFC(K) .NE. 0.) THEN
+              TDFRAC(K)   = OVRFC(K)/TDSUM
+            END IF
+         END DO
+         IF (TDSUM > 0.) THEN
+            IF (TDSUM > TDDC) TDSUM = TDDC
+            TDRVOL   = TDRVOL  + TDSUM
+            DO K = 1, 3
+              OVRFC(K) = TDFRAC(K)*TDSUM
+              SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+              SMC(K)   = SH2O(K) + SICE (K)
+            END DO
+         END IF
+         
+      ELSE IF (parameters%DRAIN_LAYER_OPT == 3) THEN
+         print*, "CASE = 3.  Draining from layer 2 and 3"
+         DO K = 2, 3
+            AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+            OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+            IF(OVRFC(K) < 0.) OVRFC(K) = 0.
+            TDSUM    = TDSUM + OVRFC(K)
+         END DO
+         DO K = 2, 3
+            IF(OVRFC(K) .NE. 0.) THEN
+              TDFRAC(K)   = OVRFC(K)/TDSUM
+            END IF
+         END DO
+         IF (TDSUM > 0.) THEN
+            IF (TDSUM > TDDC) TDSUM = TDDC
+            TDRVOL   = TDRVOL  + TDSUM
+            DO K = 2, 3
+              OVRFC(K) = TDFRAC(K)*TDSUM
+              SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+              SMC(K)   = SH2O(K) + SICE (K)
+            END DO
+         END IF
+      ELSE IF (parameters%DRAIN_LAYER_OPT == 4) THEN
+      
+         print*, "CASE = 4.  Draining from layer 3 and 4"
+         DO K = 3, 4
+            AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+            OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+            IF(OVRFC(K) < 0.) OVRFC(K) = 0.
+            TDSUM    = TDSUM + OVRFC(K)
+         END DO
+         DO K = 3, 4
+            IF(OVRFC(K) .NE. 0.) THEN
+              TDFRAC(K)   = OVRFC(K)/TDSUM
+            END IF
+         END DO
+         
+         
+         IF (TDSUM > 0.) THEN
+            IF (TDSUM > TDDC) TDSUM = TDDC
+            TDRVOL   = TDRVOL  + TDSUM
+            
+            DO K = 3, 4
+              OVRFC(K) = TDFRAC(K)*TDSUM
+              SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+              SMC(K)   = SH2O(K) + SICE (K)
+            END DO
+         END IF
+         
+      ELSE IF (parameters%DRAIN_LAYER_OPT == 5) THEN ! from all the four layers
+      
+         !print*, "CASE = 5  Draining from all four layers"
+         DO K = 1, 4
+            AVFC(K)  = parameters%SMCREF(K) - SICE (K)
+            OVRFC(K) = (SH2O(K) - (parameters%TDSMC_FAC*AVFC(K))) * ZLAYER(K) * 1000. ! mm
+            IF(OVRFC(K) < 0.) OVRFC(K) = 0.
+            TDSUM    = TDSUM + OVRFC(K)
+         END DO
+         DO K = 1, 4
+            IF(OVRFC(K) .NE. 0.) THEN
+              TDFRAC(K)   = OVRFC(K)/TDSUM
+            END IF
+         END DO
+         
+         IF (TDSUM > 0.) THEN
+            IF (TDSUM > TDDC) TDSUM = TDDC
+            TDRVOL   = TDRVOL  + TDSUM
+            DO K = 1, 4
+              OVRFC(K) = TDFRAC(K)*TDSUM
+              SH2O(K)  = SH2O(K) - (OVRFC(K)/(ZLAYER(K) * 1000.))
+              SMC(K)   = SH2O(K) + SICE (K)
+            END DO
+         END IF
+      END IF
+    QTLDRN = TDRVOL
+    print*,"QTLDRN =",QTLDRN
+  END SUBROUTINE TILE_DRAIN
+
+!===================================================================================================
+  SUBROUTINE TILE_HOOGHOUDT (parameters,WCND,NSOIL,SH2O,SMC,SICE,ZSOIL,DT,DX,QTLDRN,WATBLED)
+! Definitions
+!TD_SATZ      = Thickness of saturated zone in layer considered ~ W
+!TD_SPAC      = Tile Drain SPACing ~ SDRAIN
+!TD_HAIL      = Height of water table in the drain Above Impermeable Layer (de)  -     
+!                HDRAIN
+!TD_HEMD      = Effective Height between water level in the drains to the water 
+!               table MiDpoint  ~ EM
+!ZLAYER(K)    = Thickness of layer K ~DZ(I)
+!TD_DTWT      = Depth To Water Table (cm) ~ TD_DTWT
+!TD_FLUX      = Drainge Flux cm/hr~ DFLUX
+!TD_DEPTH     = Effective Depth to impermeable layer from soil surface~ DEPTH
+!TD_TTSZ      = Total Thickness of Saturated Zone ~ DEEP
+!KLAT         = Lateral hydraulic conductivity, CONE
+!KLATK        = Lateral hydraulic conductivity of a specific layer ~ CONK
+!DTOPL        = Depth of top of the layer considered~ ABOVE
+!TD_DC        = Drainage Coefficient ~ DC
+!TD_DDRN      = Depth of drain ~ DDRAIN
+!TD_ADEPTH    = Actual depth to impermeable layer form surface. ADEPTH  >= TD_DEPTH         
+!----------------------------------------------------------------------------
+! inout
+    type (noahmp_parameters), intent(in)        :: parameters
+    INTEGER,INTENT(IN)                          :: NSOIL
+    REAL,   INTENT(IN)                          :: DT
+    REAL,   INTENT(IN)                          :: DX
+    REAL, DIMENSION(1:NSOIL), INTENT(IN)        :: SICE
+    REAL, DIMENSION(1:NSOIL), INTENT(IN)        :: ZSOIL
+    REAL, DIMENSION(1:NSOIL), INTENT(IN)        :: WCND
+    
+    REAL, DIMENSION(1:NSOIL), INTENT(INOUT)     :: SH2O
+    REAL, DIMENSION(1:NSOIL), INTENT(INOUT)     :: SMC
+    REAL, INTENT(INOUT)                         :: QTLDRN  ! tile drain discharge
+    REAL, INTENT(IN)                            :: WATBLED ! water table depth
+! local 
+    INTEGER                                     :: K
+    REAL, DIMENSION(1:NSOIL)                    :: TD_SATZ ! thickness of saturated zone
+    REAL, DIMENSION(1:NSOIL)                    :: KLATK   ! lateral hydraulic ocnductivity kth layer
+    REAL                                        :: TD_TTSZ ! total satutation thickness
+    REAL                                        :: TD_LQ   ! lateral flow
+    REAL                                        :: DTOPL   ! depth to top of the layer
+    REAL                                        :: XX
+    REAL                                        :: YY
+    REAL                                        :: KLAT    ! average lateral hydruaic conductivity
+    REAL                                        :: TD_HAIL 
+    REAL                                        :: TD_DEPTH 
+    REAL                                        :: TD_HEMD
+    REAL,DIMENSION(1:NSOIL)                     :: ZLAYER
+    REAL,DIMENSION(1:NSOIL)                     :: OVRFC
+    INTEGER                                     :: NDRAINS
+    REAL                                        :: TDDC
+    REAL,DIMENSION(1:NSOIL)                     :: RMSH2O
+    REAL                                        :: QTLDRN1
+    REAL                                        :: TD_DD
+!----------------------------------------------------------------------------
+    TD_SATZ = 0. 
+    DTOPL   = 0.
+    TD_LQ   = 0.
+    TD_TTSZ = 0.
+    TDDC    = parameters%TD_DCOEF* 1000. * DT/(24. * 3600.) ! m per day to mm per time step
+! Thickness of soil layers    
+    DO K = 1, NSOIL
+      IF (K == 1) THEN
+         ZLAYER(K) = -1 * ZSOIL(K)
+      ELSE
+         ZLAYER(K) = (ZSOIL(K-1)-ZSOIL(K))
+      END IF
+    END DO
+    !CALL TD_FINDZWAT(parameters,NSOIL,SMC,SH2O,SICE,ZSOIL,ZLAYER,WATBLED)
+! Depth to water table
+    YY = WATBLED
+    IF (YY .GT. parameters%TD_ADEPTH) YY = parameters%TD_ADEPTH
+! Depth of saturated zone
+    DO K=1, NSOIL
+       IF (YY .GT. (-1*ZSOIL(K))) THEN
+          TD_SATZ(K) = 0.
+       ELSE
+          TD_SATZ(K) = (-1*ZSOIL(K)) - YY
+          XX =  (-1*ZSOIL(K)) - DTOPL
+          IF(TD_SATZ(K) .GT. XX) TD_SATZ(K) = XX
+       END IF
+       DTOPL = -1*ZSOIL(K)
+    END DO
+! lateral hydr. conductivity and total lateral flow
+    DO K=1, NSOIL
+       KLATK(K)= WCND(K)*parameters%KLAT_FAC * DT ! m/s to m/time step
+       TD_LQ   = TD_LQ + (TD_SATZ(K) * KLATK(K))
+       TD_TTSZ = TD_TTSZ + TD_SATZ(K)
+    END DO
+    IF (TD_TTSZ .LT. 0.001) TD_TTSZ = 0.001
+    IF (TD_LQ   .LT. 0.001) TD_LQ   = 0.
+    KLAT = TD_LQ/TD_TTSZ ! lateral hydraulic conductivity per time step
+    TD_DD = parameters%TD_ADEPTH - parameters%TD_DDRAIN 
+    
+    CALL TD_EQUIVALENT_DEPTH (TD_DD,    &
+                              parameters%TD_SPAC, &
+                              parameters%TD_RADI, &
+                              TD_HAIL)
+                              
+        !CALL TD_EQUIVALENT_DEPTH (parameters%TD_D,    &
+        !                      parameters%TD_SPAC, &
+        !                      parameters%TD_RADI, &
+        !                      TD_HAIL)                          
+    TD_DEPTH= TD_HAIL + parameters%TD_DDRAIN 
+    TD_HEMD = parameters%TD_DDRAIN - YY
+    IF (TD_HEMD .LE. 0.) THEN
+       QTLDRN = 0.
+    ELSE
+       QTLDRN = ((8.*KLAT*TD_HAIL*TD_HEMD) + (4.*KLAT*TD_HEMD*TD_HEMD))& ! m per time step
+                 /(parameters%TD_SPAC*parameters%TD_SPAC)
+    END IF
+    QTLDRN = QTLDRN * 1000. ! m to mm
+    IF(QTLDRN .LE. 0.) QTLDRN = 0.
+    IF(QTLDRN .GT. TDDC) QTLDRN = TDDC
+    NDRAINS = INT(DX/parameters%TD_SPAC)
+    QTLDRN = QTLDRN * NDRAINS
+    print*,"TD_TTSZ =",TD_TTSZ
+    print*,"TD_LQ   =",TD_LQ
+    print*,"KLAT    =",KLAT
+    print*,"TD_HAIL =",TD_HAIL
+    print*,"TD_DEPTH=",TD_DEPTH
+    print*,"YY      =",YY
+    print*,"TD_HEMD =",TD_HEMD
+    print*,"QTLDRN  =",QTLDRN
+    print*,"NDRAINS =",NDRAINS
+    print*,"TD_DD   =",TD_DD 
+    print*,"TDDC    =",TDDC
+! update soil moisture after drainage: moisture drains from top to bottom
+    DO K=1, NSOIL
+      OVRFC(K) = (SH2O(K) - parameters%SMCREF(K)) * ZLAYER(K) * 1000. !mm
+    END DO
+    QTLDRN1 = QTLDRN
+    DO K=1, NSOIL
+      IF(QTLDRN1 .GT. 0.) THEN
+         IF((TD_SATZ(K) .GT. 0.) .AND. (OVRFC(K) .GT. 0.)) THEN
+           RMSH2O(K) = OVRFC(K) - QTLDRN1
+           IF (RMSH2O(K) .GT. 0.) THEN
+              SH2O(K) = parameters%SMCREF(K) + RMSH2O(K)/(ZLAYER(K) * 1000.)
+              SMC(K)   = SH2O(K) + SICE (K)
+              EXIT
+           ELSE
+              SH2O(K) = parameters%SMCREF(K)
+              SMC(K)   = SH2O(K) + SICE (K)
+              QTLDRN1 = QTLDRN1 - OVRFC(K)
+           END IF
+         END IF
+      END IF
+    END DO
+ END SUBROUTINE TILE_HOOGHOUDT
+ 
+!----------------------------------------------------------------------- 
+ SUBROUTINE TD_EQUIVALENT_DEPTH (TD_D,TD_L,TD_RD,TD_DE)
+! ----------------------------------------------------------------------
+! calculate tile drainage equivalent depth from d.
+! ----------------------------------------------------------------------
+    IMPLICIT NONE
+! ----------------------------------------------------------------------
+ REAL, INTENT(IN)  :: TD_D
+ REAL, INTENT(IN)  :: TD_L
+ REAL, INTENT(IN)  :: TD_RD
+ REAL, INTENT(OUT) :: TD_DE
+ REAL              :: PII = 22./7.
+ REAL              :: TD_X
+ REAL              :: TD_FX, EX,TERM
+ INTEGER           :: I
+!-------------------------------------
+ TD_FX = 0.
+ EX     = 0.
+ TERM   = 0.
+ 
+ TD_X = (2.0*PII*TD_D)/TD_L
+ 
+ IF (TD_X .GT. 0.5) THEN
+    DO I=1,45,2
+       EX     = EXP(-2.0*I*TD_X)
+       TERM   = (4.0*EX)/(I*(1-EX))
+       TD_FX = TD_FX + TERM
+       IF(TERM .LT. 1.E-6) THEN
+         TD_DE = ((PII*TD_L)/8.0)/(LOG(TD_L/(PII*TD_RD))+TD_FX)
+         EXIT
+       END IF
+    END DO
+ ELSE IF (TD_X .LT. 1.E-8) THEN
+    TD_DE  = TD_D
+ ELSE
+    TD_FX = ((PII*PII)/(4*TD_X))+(LOG(TD_X/(2*PII)))
+    TD_DE = ((PII*TD_L)/8.0)/(LOG(TD_L/(PII*TD_RD))+TD_FX) 
+ END IF
+ 
+ IF (TD_DE .LT. 0. .AND. I .LE. 2) TD_DE = TD_D
+  
+ END SUBROUTINE TD_EQUIVALENT_DEPTH
+
+!------------------------------------------------------------------------------------------
+ SUBROUTINE TD_FINDZWAT(parameters,NSOIL,SMC,SH2O,SICE,ZSOIL,SLDPTH,WATBLED)
+	IMPLICIT NONE
+!-------- DECLARATIONS ------------------------
+    type (noahmp_parameters), intent(in)   :: parameters
+	INTEGER, INTENT(IN)                    :: NSOIL
+	REAL, INTENT(IN), DIMENSION(NSOIL)     :: SMC,SH2O,SICE
+	REAL, INTENT(IN), DIMENSION(NSOIL)     :: ZSOIL
+	REAL, INTENT(IN), DIMENSION(NSOIL)     :: SLDPTH
+	REAL, INTENT(OUT)                      :: WATBLED
+	REAL                                   :: CWATAVAIL
+    INTEGER                                :: SATLYRCHK
+       
+! Local Variables
+    INTEGER :: K,i,j
+!------------------------------------------------------------
+        
+        SATLYRCHK = 0  !set flag for sat. layers
+        CWATAVAIL = 0.  !set wat avail for subsfc rtng = 0.
+        
+        DO K=NSOIL,1,-1
+           IF ( (SMC(K).GE.parameters%SMCREF(K)).AND.&
+           (parameters%SMCREF(K) .GT.parameters%SMCWLT(K)) ) THEN
+                  IF((SATLYRCHK .EQ.K+1) .OR. (K.EQ.NSOIL)) SATLYRCHK = K
+           END IF
+        END DO
+        IF (SATLYRCHK .NE. 0) THEN
+            IF (SATLYRCHK .NE. 1) then  ! soil column is partially sat.
+                WATBLED = -ZSOIL(SATLYRCHK-1)
+            ELSE  ! soil column is fully saturated to sfc.
+                WATBLED = 0.
+            END IF
+            DO K = SATLYRCHK,NSOIL
+               CWATAVAIL = CWATAVAIL+(SMC(K)-parameters%SMCREF(K))*SLDPTH(K)
+            END DO
+        ELSE  ! no saturated layers...
+            WATBLED   = -ZSOIL(NSOIL)
+            SATLYRCHK = NSOIL + 1
+        END IF
+ END SUBROUTINE TD_FINDZWAT 
+!----------------------------------------------------------------
 
 !== begin wdfcnd1 ==================================================================================
 
@@ -9099,7 +9562,7 @@ END SUBROUTINE EMERG
 
   subroutine noahmp_options(idveg     ,iopt_crs  ,iopt_btr  ,iopt_run  ,iopt_sfc  ,iopt_frz , & 
                              iopt_inf  ,iopt_rad  ,iopt_alb  ,iopt_snf  ,iopt_tbot, iopt_stc, &
-			     iopt_rsf , iopt_soil, iopt_pedo, iopt_crop )
+			     iopt_rsf , iopt_soil, iopt_pedo, iopt_crop  ,iopt_tdrn )
 
   implicit none
 
@@ -9121,7 +9584,7 @@ END SUBROUTINE EMERG
   INTEGER,  INTENT(IN) :: iopt_soil !soil parameters set-up option
   INTEGER,  INTENT(IN) :: iopt_pedo !pedo-transfer function
   INTEGER,  INTENT(IN) :: iopt_crop !crop model option (0->none; 1->Liu et al.; 2->Gecros)
-
+  INTEGER,  INTENT(IN) :: iopt_tdrn !tile drainage
 ! -------------------------------------------------------------------------------------------------
 
   dveg = idveg
@@ -9141,6 +9604,7 @@ END SUBROUTINE EMERG
   opt_soil = iopt_soil
   opt_pedo = iopt_pedo
   opt_crop = iopt_crop
+  opt_tdrn = iopt_tdrn
   
   end subroutine noahmp_options
  
@@ -9331,6 +9795,19 @@ MODULE NOAHMP_TABLES
     REAL :: RTPT_TABLE(NCROP,NSTAGE)    ! fraction of carbohydrate flux to root
     REAL :: GRAINPT_TABLE(NCROP,NSTAGE) ! fraction of carbohydrate flux to grain
     REAL :: BIO2LAI_TABLE(NCROP)        ! leaf are per living leaf biomass [m^2/kg]
+
+! tile drainage parameters
+    REAL    :: TDSMCFAC_TABLE(MAX_SOILTYP)
+    REAL    :: TD_DC_TABLE(MAX_SOILTYP)
+    INTEGER :: TD_DEPTH_TABLE(MAX_SOILTYP)
+    INTEGER :: DRAIN_LAYER_OPT_TABLE
+    REAL    :: TD_DCOEF_TABLE(MAX_SOILTYP)
+    REAL    :: TD_D_TABLE(MAX_SOILTYP)
+    REAL    :: TD_ADEPTH_TABLE(MAX_SOILTYP)
+    REAL    :: TD_RADI_TABLE(MAX_SOILTYP)
+    REAL    :: TD_SPAC_TABLE(MAX_SOILTYP)
+    REAL    :: TD_DDRAIN_TABLE(MAX_SOILTYP)
+    REAL    :: KLAT_FAC_TABLE(MAX_SOILTYP)
 
 ! MPTABLE.TBL optional parameters
 
@@ -10075,6 +10552,64 @@ RSURF_SNOW_TABLE     = RSURF_SNOW
       BIO2LAI_TABLE      = BIO2LAI
 
   end subroutine read_mp_crop_parameters
+
+  subroutine read_tiledrain_parameters
+    implicit none
+    integer :: ierr
+    logical :: file_named 
+    REAL, DIMENSION(MAX_SOILTYP)    :: TDSMC_FAC
+    INTEGER, DIMENSION(MAX_SOILTYP) :: TD_DEPTH
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_DC
+    INTEGER                         :: DRAIN_LAYER_OPT
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_DCOEF
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_D 
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_ADEPTH
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_RADI
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_SPAC 
+    REAL, DIMENSION(MAX_SOILTYP)    :: TD_DDRAIN
+    REAL, DIMENSION(MAX_SOILTYP)    :: KLAT_FAC
+    
+        NAMELIST / noahmp_tiledrain_parameters /DRAIN_LAYER_OPT,TDSMC_FAC,TD_DEPTH,TD_DC,&
+                                           TD_DCOEF,TD_D,TD_ADEPTH,TD_RADI,TD_SPAC,TD_DDRAIN,&
+                                           KLAT_FAC
+    ! Initialize our variables to bad values, so that if the namelist read fails, we come to a screeching halt as soon as we try to use anything.
+    TDSMCFAC_TABLE           = -99999
+    TD_DEPTH_TABLE           = -99999
+    TD_DC_TABLE              = -99999
+    DRAIN_LAYER_OPT_TABLE    = -99999
+    TD_DCOEF_TABLE           = -99999
+    TD_D_TABLE               = -99999
+    TD_ADEPTH_TABLE          = -99999
+    TD_RADI_TABLE            = -99999
+    TD_SPAC_TABLE            = -99999
+    TD_DDRAIN_TABLE          = -99999
+    KLAT_FAC_TABLE           = -99999
+    
+    inquire( file='MPTABLE.TBL', exist=file_named ) 
+    if ( file_named ) then
+      open(15, file="MPTABLE.TBL", status='old', form='formatted', action='read', iostat=ierr)
+    else
+      open(15, status='old', form='formatted', action='read', iostat=ierr)
+    end if
+    if (ierr /= 0) then
+       write(*,'("WARNING: Cannot find file MPTABLE.TBL")')
+       call wrf_error_fatal("STOP in Noah-MP read_tiledrain_parameters")
+    endif
+    read(15,noahmp_tiledrain_parameters)
+    close(15)
+    TDSMCFAC_TABLE           = TDSMC_FAC
+    TD_DEPTH_TABLE           = TD_DEPTH
+    DRAIN_LAYER_OPT_TABLE    = DRAIN_LAYER_OPT
+    TD_DC_TABLE              = TD_DC
+    
+    TD_DCOEF_TABLE           = TD_DCOEF
+    TD_D_TABLE               = TD_D
+    TD_ADEPTH_TABLE          = TD_ADEPTH
+    TD_RADI_TABLE            = TD_RADI
+    TD_SPAC_TABLE            = TD_SPAC
+    TD_DDRAIN_TABLE          = TD_DDRAIN
+    KLAT_FAC_TABLE           = KLAT_FAC
+  end subroutine read_tiledrain_parameters
 
   subroutine read_mp_optional_parameters()
     implicit none
