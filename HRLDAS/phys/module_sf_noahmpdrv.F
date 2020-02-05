@@ -553,13 +553,14 @@ CONTAINS
        PRCP   = PRECIP_IN (I,J) / DT                  ! timestep total precip rate (glacier) [mm/s]! MB: v3.7
 
        CROPTYPE = 0
-       IF (IOPT_CROP > 0 .AND. VEGTYP == ISCROP_TABLE) CROPTYPE = DEFAULT_CROP_TABLE ! default croptype is generic dynamic vegetation crop
-       IF (IOPT_CROP > 0 .AND. CROPCAT(I,J) > 0) THEN
-         CROPTYPE = CROPCAT(I,J)                      ! crop type
+       !IF (IOPT_CROP > 0 .AND. VEGTYP == ISCROP_TABLE) CROPTYPE = DEFAULT_CROP_TABLE ! default croptype is generic dynamic vegetation crop
+       !IF (IOPT_CROP > 0 .AND. CROPCAT(I,J) > 0) THEN
+       !  CROPTYPE = CROPCAT(I,J)                      ! crop type
+         CROPTYPE = 1
 	 VEGTYP = ISCROP_TABLE
          FVGMAX = 0.95
 	 FVEG   = 0.95
-       END IF
+       !END IF
 
        IF (PRESENT(MP_RAINC) .AND. PRESENT(MP_RAINNC) .AND. PRESENT(MP_SHCV) .AND. &
            PRESENT(MP_SNOW)  .AND. PRESENT(MP_GRAUP)  .AND. PRESENT(MP_HAIL)   ) THEN
@@ -694,7 +695,17 @@ CONTAINS
 !       parameters%refkdt = REFKDT_2D(I,J)         ! Soil Infiltration Parameter
 
        CALL TRANSFER_MP_PARAMETERS(VEGTYP,SOILTYP,SLOPETYP,SOILCOLOR,CROPTYPE,parameters)
-       
+        WRITE(*,*) "parameter C3PSN =",parameters%C3PSN
+        WRITE(*,*) "parameter KC25  =",parameters%KC25
+        WRITE(*,*) "parameter AKC   =",parameters%AKC
+        WRITE(*,*) "parameter KO25  =",parameters%KO25
+        WRITE(*,*) "parameter AKO   =",parameters%AKO
+        WRITE(*,*) "parameter AVCMX =",parameters%AVCMX
+        WRITE(*,*) "parameter VCMX25=",parameters%VCMX25
+        WRITE(*,*) "parameter BP    =",parameters%BP
+        WRITE(*,*) "parameter MP    =",parameters%MP
+        WRITE(*,*) "parameter FOLNMX=",parameters%FOLNMX
+        WRITE(*,*) "parameter QE25  =",parameters%QE25 
        if(iopt_soil == 3 .and. .not. parameters%urban_flag) then
          
 	sand = 0.01 * soilcomp(i,1:4,j)
@@ -1158,6 +1169,17 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
    parameters%GDDS3     =     GDDS3_TABLE(CROPTYPE)    ! GDD from seeding to post vegetative 
    parameters%GDDS4     =     GDDS4_TABLE(CROPTYPE)    ! GDD from seeding to intial reproductive
    parameters%GDDS5     =     GDDS5_TABLE(CROPTYPE)    ! GDD from seeding to pysical maturity 
+   parameters%C3PSN     =     C3PSN_TABLE(CROPTYPE)    ! parameters from stomata
+   parameters%KC25      =      KC25_TABLE(CROPTYPE)
+   parameters%AKC       =       AKC_TABLE(CROPTYPE)
+   parameters%KO25      =      KO25_TABLE(CROPTYPE)
+   parameters%AKO       =       AKO_TABLE(CROPTYPE)
+   parameters%AVCMX     =     AVCMX_TABLE(CROPTYPE)
+   parameters%VCMX25    =    VCMX25_TABLE(CROPTYPE)
+   parameters%BP        =        BP_TABLE(CROPTYPE)
+   parameters%MP        =        MP_TABLE(CROPTYPE)
+   parameters%FOLNMX    =    FOLNMX_TABLE(CROPTYPE)
+   parameters%QE25      =      QE25_TABLE(CROPTYPE)    ! ends here
    parameters%C3C4      =      C3C4_TABLE(CROPTYPE)    ! photosynthetic pathway:  1. = c3 2. = c4
    parameters%AREF      =      AREF_TABLE(CROPTYPE)    ! reference maximum CO2 assimulation rate 
    parameters%PSNRF     =     PSNRF_TABLE(CROPTYPE)    ! CO2 assimulation reduction factor(0-1) (caused by non-modeling part,e.g.pest,weeds)
@@ -1184,6 +1206,9 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
    parameters%STPT      =      STPT_TABLE(CROPTYPE,:)  ! fraction of carbohydrate flux to stem
    parameters%RTPT      =      RTPT_TABLE(CROPTYPE,:)  ! fraction of carbohydrate flux to root
    parameters%GRAINPT   =   GRAINPT_TABLE(CROPTYPE,:)  ! fraction of carbohydrate flux to grain
+   parameters%LFCT      =      LFCT_TABLE(CROPTYPE,:)  ! fraction of translocation to grain
+   parameters%STCT      =      STCT_TABLE(CROPTYPE,:)  ! fraction of translocation to grain
+   parameters%RTCT      =      RTCT_TABLE(CROPTYPE,:)  ! fraction of translocation to grain
    parameters%BIO2LAI   =   BIO2LAI_TABLE(CROPTYPE)    ! leaf are per living leaf biomass [m^2/kg]
   END IF
 
