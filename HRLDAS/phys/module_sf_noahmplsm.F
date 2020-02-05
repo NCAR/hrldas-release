@@ -643,7 +643,6 @@ contains
   LOGICAL                             :: crop_active ! flag to run crop model
   
   REAL :: FB
-  CHARACTER(len=256)                          :: message  
 
   ! INTENT (OUT) variables need to be assigned a value.  These normally get assigned values
   ! only if DVEG == 2.
@@ -803,8 +802,6 @@ contains
                  TOTLB  ,LAI    ,SAI    )                   !out
    END IF
 
-   !write(message,*) 'crop active: ',crop_active
-   !call wrf_message(trim(message))
    IF (OPT_CROP == 1 .and. crop_active) THEN
     CALL CARBON_CROP (parameters,NSNOW  ,NSOIL  ,VEGTYP ,DT     ,ZSOIL  ,JULIAN , & !in 
                          DZSNSO ,STC    ,SMC    ,TV     ,PSN    ,FOLN   ,BTRAN  , & !in
@@ -812,8 +809,6 @@ contains
                          LFMASS ,RTMASS ,STMASS ,WOOD   ,STBLCP ,FASTCP ,GRAIN  , & !inout
 			 LAI    ,SAI    ,GDD    ,                                 & !inout
                          GPP    ,NPP    ,NEE    ,AUTORS ,HETERS ,TOTSC  ,TOTLB, PGS    ) !out
-   ! write(message,*) 'crop model is called'
-   ! call wrf_message(trim(message))
    END IF
    
 ! water and energy balance check
@@ -2072,8 +2067,6 @@ ENDIF   ! CROPTYPE == 0
 
     APAR = PARSUN*LAISUN + PARSHA*LAISHA
     PSN  = PSNSUN*LAISUN + PSNSHA*LAISHA
-    write(*,*) "PSNSUN =",PSNSUN
-    write(*,*) "PSNSHA =",PSNSHA
 ! 3L snow & 4L soil temperatures
 
     CALL TSNOSOI (parameters,ICE     ,NSOIL   ,NSNOW   ,ISNOW   ,IST     , & !in
@@ -8433,9 +8426,6 @@ END  SUBROUTINE SHALLOWWATERTABLE
                       T2M ,   DT,  JULIAN,                  & !in
                       GDD ,                                 & !inout 
                       IPA ,  IHA,     PGS)                    !out                        
-   ! Modified By Zhe 2019-02-24
-   ! Change PSN to PSNCROP
-   WRITE(*,*) "PSN  =",PSN
    CALL CO2FLUX_CROP (parameters,                              & !in
                       DT     ,STC(1) ,PSN,TV     ,WROOT  ,WSTRES ,FOLN   , & !in
                       IPA    ,IHA    ,PGS    ,                                 & !in XING
@@ -8562,17 +8552,12 @@ END  SUBROUTINE SHALLOWWATERTABLE
   REAL                   :: SD
   REAL                   :: VEGFRAC
   REAL                   :: TEMP
-  REAL                   :: ERR      !crop carbon budget error
-  REAL                   :: MASS_BEG !crop carbon budget at the beginning
-  REAL                   :: MASS_END !crop carbon budget at the end
-  CHARACTER(len=256)     :: message
 ! Respiration as a function of temperature
 
   real :: r,x
           r(x) = exp(0.08*(x-298.16))
 ! ---------------------------------------------------------------------------------
 
-    MASS_BEG = LFMASS + STMASS + RTMASS + GRAIN
 ! constants
     RSDRYC  = 40.0          !original was 40.0
     RSWOODC = 3.0E-10       !
@@ -8664,10 +8649,10 @@ END  SUBROUTINE SHALLOWWATERTABLE
      RTMASS = RTMASS - RTCONVERT
      GRAIN  = GRAIN + STCONVERT + RTCONVERT + LFCONVERT
 
-     !IF(PGS==6) THEN
-     !  STCONVERT = STMASS*(0.00005*DT/3600.0)
-     !  STMASS = STMASS - STCONVERT
-     !  RTCONVERT = RTMASS*(0.0005*DT/3600.0)
+     !IF(PGS==6) THEN                                       ! This part modified by Zhe Zhang
+     !  STCONVERT = STMASS*(0.00005*DT/3600.0)              ! 2020-02-05
+     !  STMASS = STMASS - STCONVERT                         ! change the hard-coded translocation coefficient 
+     !  RTCONVERT = RTMASS*(0.0005*DT/3600.0)               ! to parameters read from MPTABLE.TBL
      !  RTMASS = RTMASS - RTCONVERT
      !  GRAIN  = GRAIN + STCONVERT + RTCONVERT
      !END IF
@@ -8739,40 +8724,6 @@ END  SUBROUTINE SHALLOWWATERTABLE
      GRAIN  = 0
     END IF 
 
-! check carbon budget 
-    MASS_END = LFMASS + STMASS + RTMASS + GRAIN
-    ERR    = (MASS_END - MASS_BEG) - ((CBHYDRAFX) - (RSLEAF + GRLEAF + LFTOVR + DIELF) - (RSSTEM+GRSTEM+STTOVR) - (RSROOT+GRROOT+RTTOVR) - (RSGRAIN+GRGRAIN))*DT
-! growing stage and ch2o flux
-    WRITE(*,*) "PGS  =",PGS
-    WRITE(*,*) "CH2O =",CBHYDRAFX*DT
-! carbon storage
-    WRITE(*,*) "MASS_BEG =",MASS_BEG
-    WRITE(*,*) "MASS_END =",MASS_END
-    WRITE(*,*) "ERR  =",ERR 
-! for leaf
-    WRITE(*,*) "LFMASS =",LFMASS
-    WRITE(*,*) "NPPL   =",NPPL*DT
-    WRITE(*,*) "RSLEAF =",RSLEAF*DT
-    WRITE(*,*) "GRLEAF =",GRLEAF*DT
-    WRITE(*,*) "LFTOVR =",LFTOVR*DT
-    WRITE(*,*) "DIELF  =",DIELF*DT
-! for stem
-    WRITE(*,*) "STMASS =",STMASS
-    WRITE(*,*) "NPPS   =",NPPS*DT
-    WRITE(*,*) "RSSTEM =",RSSTEM*DT
-    WRITE(*,*) "GRSTEM =",GRSTEM*DT
-    WRITE(*,*) "STTOVR =",STTOVR*DT
-! for root
-    WRITE(*,*) "RTMASS =",RTMASS
-    WRITE(*,*) "NPPR   =",NPPR*DT
-    WRITE(*,*) "RSROOT =",RSROOT*DT
-    WRITE(*,*) "GRROOT =",GRROOT*DT
-    WRITE(*,*) "RTTOVR =",RTTOVR*DT
-! for grain
-    WRITE(*,*) "GRAIN  =",GRAIN
-    WRITE(*,*) "NPPG   =",NPPG*DT
-    WRITE(*,*) "RSGRAIN=",RSGRAIN*DT
-    WRITE(*,*) "GRGRAIN=",GRGRAIN*DT
 END SUBROUTINE CO2FLUX_CROP
 
 !== begin growing_gdd ==============================================================================
