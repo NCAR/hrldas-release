@@ -8,8 +8,15 @@ Repository branch structure (as of July 27, 2018)
 
   release: branch from master at WRF release intervals; may include important bug fixes after release
 
-Build container with:
+Build default Ubuntu 20.04 container with all dependencies:
     docker build -t hrldas:latest .
 
-Run container to compile with:
+Run default Ubuntu 20.04 container to compile with:
     docker run -it --rm --mount type=bind,source=$(pwd),target=/src -w /src/HRLDAS hrldas:latest
+
+Build specific container with:
+    export DISTRO_IMAGE=ubuntu DISTRO_IMAGE_VERSION=16.04; docker build --build-arg DISTRO_IMAGE=$DISTRO_IMAGE --build-arg DISTRO_IMAGE_VERSION=$DISTRO_IMAGE_VERSION -t hrldas:$DISTRO_IMAGE-$DISTRO_IMAGE_VERSION -t hrldas:latest .
+
+Run specific Ubuntu/Debian container to compile with:
+    export DISTRO_IMAGE=ubuntu DISTRO_IMAGE_VERSION=16.04
+    docker run -it --rm --mount type=bind,source=$(pwd),target=/src -w /src/HRLDAS hrldas:$DISTRO_IMAGE-$DISTRO_IMAGE_VERSION
