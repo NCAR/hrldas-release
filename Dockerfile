@@ -22,13 +22,13 @@ RUN apt-get update && \
     libswitch-perl \
     gfortran \
     libnetcdf-dev \
+# comment libnetcdff-dev to build in 14.04 only available in newer releases \
     libnetcdff-dev \
     libjpeg-dev \
-    libopenjp2-7-dev \
     libjpeg-turbo8-dev \
     libbz2-dev \
     libgrib2c-dev \
-    && apt clean
+    && apt-get clean
 
 RUN apt install -y \
     git
