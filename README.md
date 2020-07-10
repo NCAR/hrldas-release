@@ -1,15 +1,15 @@
-# Transfer crop-specific photosynthetic parameters
+# HRLDAS branch for processing GLDAS forcing data in netCDF format
 
-In the release version (last access Feb 2020), photosynthetic for crop are generic, i.e. they don't distinguish corn (C4) and soybean (C3). In this branch, a version of crop-specific photosynthetic parameters are incorporated in three changed files, including:
+In GLDAS v2.1, data format has changed from grib to netcdf. Older version of HRLDAS could only processes grib forcing. 
+This branch of hrldas allows processes GLDAS forcing in netcdf format. 
 
-./phys/module_sf_noahmplsm.F
+Modifications include:
 
-./phys/module_sf_noahmpdrv.F
+pre-processing codes for gldas netcdf in /HRLDAS_forcing/run/example/GLDAS (similar to Mike's version)
 
-./run/MPTABLE.TBL
+/HRLDAS_forcing/create_forcing.F 
 
-The incorporated version should apply different parameters for corn and soybean based on the crop type of model grid cells in regional agriculture study.
-
+details about these changes can be found in /docs/README.GLDAS
 Zhe Zhang
 
-2020-02-05
+2020-07-10
