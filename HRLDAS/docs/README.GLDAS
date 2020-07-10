@@ -167,6 +167,10 @@ Note: for GLDAS there will be no need to include a secondary SW and precipitatio
 
 3.9.2 Run the pre-processor
 
+Note: please use create_forcing_netcdf.F for this purpose. 
+`cp create_forcing_netcdf.F create_forcing.F`
+and compile again.
+
 Run the pre-processor with the GLDAS namelist
 
 ./create_forcing.exe namelist.input.GLDAS
