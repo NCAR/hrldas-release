@@ -9,6 +9,8 @@ pre-processing codes for gldas netcdf in /HRLDAS_forcing/run/example/GLDAS (simi
 
 /HRLDAS_forcing/create_forcing.F 
 
+/HRLDAS_forcing/run/example/GLDAS/namelist.input.GLDAS
+
 details about these changes can be found in /docs/README.GLDAS
 Zhe Zhang
 
