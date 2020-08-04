@@ -1,17 +1,9 @@
-# HRLDAS branch for processing GLDAS forcing data in netCDF format
+# hrldas-release
 
-In GLDAS v2.1, data format has changed from grib to netcdf. Older version of HRLDAS could only processes grib forcing. 
-This branch of hrldas allows processes GLDAS forcing in netcdf format. 
+HRLDAS (High Resolution Land Data Assimilation System) containing the Noah-MP Land Surface Model
 
-Modifications include:
+Repository branch structure (as of July 27, 2018)
 
-pre-processing codes for gldas netcdf in /HRLDAS_forcing/run/example/GLDAS (similar to Mike's version)
+  master: this is the base branch and contains all finalized development before WRF release
 
-/HRLDAS_forcing/create_forcing.F 
-
-/HRLDAS_forcing/run/example/GLDAS/namelist.input.GLDAS
-
-details about these changes can be found in /docs/README.GLDAS
-Zhe Zhang
-
-2020-07-10
+  release: branch from master at WRF release intervals; may include important bug fixes after release
