@@ -15,7 +15,7 @@
  MASK_WATER         = .TRUE.
 
  geo_em_flnm        = "./geo_em.d01.nc"
- Zfile_template     = "/glade/work/zhezhang/GLDAS/GLDASp4_elevation_025d.nc4"
+ Zfile_template     = "./GLDASp4_elevation_025d.nc4"
 
  Tfile_template     = "<DataDir>/Tair/GLDAS_Tair_f_inst_<date>"
  Ufile_template     = "<DataDir>/U/GLDAS_U_f_inst_<date>",
