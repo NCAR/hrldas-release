@@ -1,5 +1,7 @@
 # hrldas-release
 
+Note that this an old archive of HRLDAS. The new HRLDAS repository can be found at: https://github.com/NCAR/hrldas
+
 HRLDAS (High Resolution Land Data Assimilation System) containing the Noah-MP Land Surface Model
 
 Repository branch structure (as of July 27, 2018)
