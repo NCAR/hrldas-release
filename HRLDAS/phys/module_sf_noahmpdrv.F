@@ -16,7 +16,7 @@ CONTAINS
 	       PLANTING,  HARVEST,SEASON_GDD,                               &
                  IDVEG, IOPT_CRS,  IOPT_BTR, IOPT_RUN, IOPT_SFC, IOPT_FRZ,  & ! IN : User options
               IOPT_INF, IOPT_RAD,  IOPT_ALB, IOPT_SNF,IOPT_TBOT, IOPT_STC,  & ! IN : User options
-              IOPT_GLA, IOPT_RSF, IOPT_SOIL,IOPT_PEDO,IOPT_CROP,            & ! IN : User options
+              IOPT_GLA, IOPT_RSF, IOPT_SOIL,IOPT_PEDO,IOPT_CROP,IOPT_TDRN,  & ! IN : User options
               IZ0TLND, SF_URBAN_PHYSICS,                                    & ! IN : User options
 	      SOILCOMP,  SOILCL1,  SOILCL2,   SOILCL3,  SOILCL4,            & ! IN : User options
                    T3D,     QV3D,     U_PHY,    V_PHY,   SWDOWN,      GLW,  & ! IN : Forcing
@@ -25,7 +25,7 @@ CONTAINS
                 SMSTOT,SFCRUNOFF, UDRUNOFF,    ALBEDO,    SNOWC,     SMOIS, & ! IN/OUT LSM eqv
 		  SH2O,     TSLB,     SNOW,     SNOWH,   CANWAT,    ACSNOM, & ! IN/OUT LSM eqv
 		ACSNOW,    EMISS,     QSFC,                                 & ! IN/OUT LSM eqv
- 		    Z0,      ZNT,                                           & ! IN/OUT LSM eqv
+ 		    Z0,      ZNT,  QTDRAIN, ZWATBLE2D,                      & ! IN/OUT LSM eqv
                ISNOWXY,     TVXY,     TGXY,  CANICEXY, CANLIQXY,     EAHXY, & ! IN/OUT Noah MP only
 	         TAHXY,     CMXY,     CHXY,    FWETXY, SNEQVOXY,  ALBOLDXY, & ! IN/OUT Noah MP only
                QSNOWXY, WSLAKEXY,    ZWTXY,      WAXY,     WTXY,    TSNOXY, & ! IN/OUT Noah MP only
@@ -44,8 +44,9 @@ CONTAINS
 !                 BEXP_3D,SMCDRY_3D,SMCWLT_3D,SMCREF_3D,SMCMAX_3D,          & ! placeholders to activate 3D soil
 !		 DKSAT_3D,DWSAT_3D,PSISAT_3D,QUARTZ_3D,                     &
 !		 REFDK_2D,REFKDT_2D,                                        &
+!        KLAT_FAC,TDSMC_FAC,TD_DC,TD_DCOEF,TD_DDRAIN,TD_RADI,TD_SPAC, &
 #ifdef WRF_HYDRO
-               sfcheadrt,INFXSRT,soldrain,                                  &
+               sfcheadrt,INFXSRT,soldrain,qtiledrain,TD_FRACTION,           &
 #endif
                ids,ide,  jds,jde,  kds,kde,                    &
                ims,ime,  jms,jme,  kms,kme,                    &
@@ -101,6 +102,7 @@ CONTAINS
     INTEGER,                                         INTENT(IN   ) ::  IOPT_SOIL ! soil configuration option
     INTEGER,                                         INTENT(IN   ) ::  IOPT_PEDO ! soil pedotransfer function option
     INTEGER,                                         INTENT(IN   ) ::  IOPT_CROP ! crop model option (0->none; 1->Liu et al.; 2->Gecros)
+    INTEGER,                                         INTENT(IN   ) ::  IOPT_TDRN ! tile drainage
     INTEGER,                                         INTENT(IN   ) ::  IZ0TLND   ! option of Chen adjustment of Czil (not used)
     INTEGER,                                         INTENT(IN   ) ::  sf_urban_physics   ! urban physics option
     REAL,    DIMENSION( ims:ime,       8, jms:jme ), INTENT(IN   ) ::  SOILCOMP  ! soil sand and clay percentage
@@ -135,6 +137,10 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  GDDXY     ! growing degree days XING (based on 10C) 
  INTEGER,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  PGSXY
 
+!Tile drain variables    
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  QTDRAIN   ! Prasanth
+    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(IN)    ::  TD_FRACTION
+    
 ! gecros model
     REAL,    DIMENSION( ims:ime,       60,jms:jme ), INTENT(INOUT) :: gecros_state !  gecros crop
 
@@ -153,6 +159,13 @@ CONTAINS
 !    REAL,    DIMENSION( ims:ime, 1:nsoil, jms:jme ), INTENT(IN) ::  QUARTZ_3D ! Soil quartz content
 !    REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  REFDK_2D  ! Reference Soil Conductivity
 !    REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  REFKDT_2D ! Soil Infiltration Parameter
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  KLAT_FAC   ! factor multiplier to hydraulic conductivity
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TDSMC_FAC  ! factor multiplier to field capacity
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TD_DC      ! drainage coefficient for simple
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TD_DCOEF   ! drainge coefficient for Hooghoudt 
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TD_DDRAIN  ! depth of drain
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TD_RADI    ! tile radius
+!     REAL,    DIMENSION( ims:ime, jms:jme ), INTENT(IN)          ::  TD_SPAC    ! tile spacing
 
 ! INOUT (with generic LSM equivalent)
 
@@ -349,7 +362,10 @@ CONTAINS
     REAL                                :: PLAI         ! leaf area index
     REAL                                :: PSAI         ! stem area index
     REAL                                :: TAUSS        ! non-dimensional snow age
-
+    REAL                                :: QTLDRN       ! tile drainage (mm)    
+    REAL                                :: WATBLED      ! water table
+    REAL                                :: TDFRACMP
+    
 ! OUT (with no Noah LSM equivalent)
 
     REAL                                :: Z0WRF        ! combined z0 sent to coupled model
@@ -462,7 +478,7 @@ CONTAINS
 
     CALL NOAHMP_OPTIONS(IDVEG  ,IOPT_CRS  ,IOPT_BTR  ,IOPT_RUN  ,IOPT_SFC  ,IOPT_FRZ , &
                      IOPT_INF  ,IOPT_RAD  ,IOPT_ALB  ,IOPT_SNF  ,IOPT_TBOT, IOPT_STC , &
-		     IOPT_RSF  ,IOPT_SOIL ,IOPT_PEDO ,IOPT_CROP )
+                     IOPT_RSF  ,IOPT_SOIL ,IOPT_PEDO ,IOPT_CROP, IOPT_TDRN )
 
     IPRINT    =  .false.                     ! debug printout
 
@@ -631,7 +647,9 @@ CONTAINS
        SMCWTD                = SMCWTDXY(I,J)
        RECH                  = 0.
        DEEPRECH              = 0.  
-
+       QTLDRN                = 0. !QTDRAIN (I,J)                ! tile drainage (mm)
+       WATBLED               = ZWATBLE2D (I,J)
+       TDFRACMP              = TD_FRACTION(I,J)
        if(iopt_crop == 2) then   ! gecros crop model
 
          gecros1d(1:60)      = gecros_state(I,1:60,J)       ! Gecros variables 2D -> local
@@ -694,7 +712,14 @@ CONTAINS
 !       parameters%quartz = QUARTZ_3D(I,1:NSOIL,J) ! Soil quartz content
 !       parameters%refdk  = REFDK_2D (I,J)         ! Reference Soil Conductivity
 !       parameters%refkdt = REFKDT_2D(I,J)         ! Soil Infiltration Parameter
-
+!       parameters%klat_fac  = KLAT_FAC (I,J)      ! factor multiplier to hydraulic conductivity
+!       parameters%tdsmc_fac = TDSMC_FAC(I,J)      ! factor multiplier to field capacity
+!       parameters%td_dc     = TD_DC    (I,J)      ! drainage coefficient for simple
+!       parameters%td_dcoef  = TD_DCOEF (I,J)      ! drainge coefficient for Hooghoudt 
+!       parameters%td_ddrain = TD_DDRAIN(I,J)      ! depth of drain
+!       parameters%td_radi   = TD_RADI  (I,J)      ! tile radius
+!       parameters%td_spac   = TD_SPAC  (I,J)      ! tile spacing
+       
        CALL TRANSFER_MP_PARAMETERS(VEGTYP,SOILTYP,SLOPETYP,SOILCOLOR,CROPTYPE,parameters)
        
        if(iopt_soil == 3 .and. .not. parameters%urban_flag) then
@@ -793,7 +818,8 @@ CONTAINS
          LFMASS = undefined_value 
          RTMASS = undefined_value 
          STMASS = undefined_value 
-         WOOD   = undefined_value 
+         WOOD   = undefined_value
+         QTLDRN = undefined_value 
          GRAIN  = undefined_value
          GDD    = undefined_value
          STBLCP = undefined_value 
@@ -863,7 +889,7 @@ CONTAINS
             STMASS  , WOOD    , STBLCP  , FASTCP  , PLAI    , PSAI    , & ! IN/OUT : 
             CM      , CH      , TAUSS   ,                               & ! IN/OUT : 
             GRAIN   , GDD     , PGS     ,                               & ! IN/OUT 
-            SMCWTD  ,DEEPRECH , RECH    ,                               & ! IN/OUT :
+            SMCWTD  ,DEEPRECH , RECH    ,QTLDRN  , WATBLED,  TDFRACMP,  & ! IN/OUT :
             GECROS1D,                                                   & ! IN/OUT :
             Z0WRF   ,                                                   &
             FSA     , FSR     , FIRA    , FSH     , SSOIL   , FCEV    , & ! OUT : 
@@ -950,7 +976,7 @@ CONTAINS
              XLAIXY   (I,J)                = PLAI
              XSAIXY   (I,J)                = PSAI
              TAUSSXY  (I,J)                = TAUSS
-
+             QTDRAIN  (I,J)                = QTDRAIN (I,J)+ QTLDRN
 ! OUTPUT
 
              Z0       (I,J)                = Z0WRF
@@ -1235,6 +1261,21 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
     parameters%REFDK  = REFDK_TABLE
     parameters%REFKDT = REFKDT_TABLE
 
+	!------------------------------------------------------------------------------------------!
+! Transfer tiledrain parameters
+!------------------------------------------------------------------------------------------!
+   parameters%KLAT_FAC        = KLAT_FAC_TABLE(SOILTYPE)
+   parameters%TDSMC_FAC       = TDSMCFAC_TABLE(SOILTYPE)
+   parameters%TD_DC           = TD_DC_TABLE(SOILTYPE)
+   parameters%TD_DCOEF        = TD_DCOEF_TABLE(SOILTYPE) 
+   parameters%TD_RADI         = TD_RADI_TABLE(SOILTYPE) 
+   parameters%TD_SPAC         = TD_SPAC_TABLE(SOILTYPE) 
+   parameters%TD_DDRAIN       = TD_DDRAIN_TABLE(SOILTYPE) 
+
+   parameters%TD_DEPTH        = TD_DEPTH_TABLE(SOILTYPE)
+   parameters%TD_ADEPTH       = TD_ADEPTH_TABLE(SOILTYPE)
+   parameters%DRAIN_LAYER_OPT = DRAIN_LAYER_OPT_TABLE
+   parameters%TD_D            = TD_D_TABLE(SOILTYPE) 
 ! ----------------------------------------------------------------------
 ! Transfer GENPARM parameters
 ! ----------------------------------------------------------------------
@@ -1397,7 +1438,7 @@ SUBROUTINE PEDOTRANSFER_SR2006(nsoil,sand,clay,orgm,parameters)
        ids,ide, jds,jde, kds,kde,                &
        ims,ime, jms,jme, kms,kme,                &
        its,ite, jts,jte, kts,kte,                &
-       smoiseq  ,smcwtdxy ,rechxy   ,deeprechxy, areaxy, dx, dy, msftx, msfty,&     ! Optional groundwater
+       smoiseq  ,smcwtdxy ,rechxy   ,deeprechxy, qtdrain , areaxy, dx, dy, msftx, msfty,&     ! Optional groundwater
        wtddt    ,stepwtd  ,dt       ,qrfsxy     ,qspringsxy  , qslatxy    ,  &      ! Optional groundwater
        fdepthxy ,ht     ,riverbedxy ,eqzwt     ,rivercondxy ,pexpxy       ,  &      ! Optional groundwater
        rechclim,                                                             &      ! Optional groundwater
@@ -1481,6 +1522,8 @@ SUBROUTINE PEDOTRANSFER_SR2006(nsoil,sand,clay,orgm,parameters)
     INTEGER, DIMENSION(ims:ime,  jms:jme), INTENT(OUT) :: cropcat
     REAL   , DIMENSION(ims:ime,5,jms:jme), INTENT(IN ) :: croptype
 
+    REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: qtdrain     !tile drainage (mm)
+
 ! IOPT_RUN = 5 option
 
     REAL, DIMENSION(ims:ime,1:nsoil,jms:jme), INTENT(INOUT) , OPTIONAL :: smoiseq !equilibrium soil moisture content [m3m-3]
@@ -1539,7 +1582,8 @@ SUBROUTINE PEDOTRANSFER_SR2006(nsoil,sand,clay,orgm,parameters)
     call read_mp_global_parameters()
     call read_mp_crop_parameters()
     call read_mp_optional_parameters()
-
+    call read_tiledrain_parameters()
+	    
     IF( .NOT. restart ) THEN
 
        itf=min0(ite,ide-1)
@@ -1647,6 +1691,7 @@ SUBROUTINE PEDOTRANSFER_SR2006(nsoil,sand,clay,orgm,parameters)
 
        DO J = jts,jtf
           DO I = its,itf
+             qtdrain    (I,J) = 0.
              tvxy       (I,J) = TSK(I,J)
 	       if(snow(i,j) > 0.0 .and. tsk(i,j) > 273.15) tvxy(I,J) = 273.15
              tgxy       (I,J) = TSK(I,J)
